@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(export PATH=\"$PATH:/c/Program Files/nodejs:/c/Users/plyman/AppData/Roaming/npm\")",
+      "Bash(npm --version)",
+      "Bash(git config:*)"
+    ]
+  },
+  "dangerouslySkipPermissions": true
+}
