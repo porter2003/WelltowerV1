@@ -3,7 +3,14 @@
     "allow": [
       "Bash(export PATH=\"$PATH:/c/Program Files/nodejs:/c/Users/plyman/AppData/Roaming/npm\")",
       "Bash(npm --version)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(ls \"c:/Users/plyman/Claude Code Project 1 \\(3-11-26\\)\")",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes)",
+      "Bash(npx create-next-app@latest brighton-welltower --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes)",
+      "Bash(ls \"c:/Users/plyman/Claude Code Project 1 \\(3-11-26\\)/.claude\")",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(ls \"c:/Users/plyman/Claude Code Project 1 \\(3-11-26\\)/docs/\")"
     ]
   },
   "dangerouslySkipPermissions": true
