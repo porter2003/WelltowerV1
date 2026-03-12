@@ -1,8 +1,10 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getDealById, getTasksForDeal, getAssigneesForTask } from '@/lib/mock-data';
+import { createClient } from '@/lib/supabase-server';
 import { StageBadge, PriorityBadge } from '@/components/ui/Badge';
-import type { DealStage, Task } from '@/lib/types';
+import type { Deal, DealStage, Task } from '@/lib/types';
+
+export const revalidate = 0;
 
 const STAGE_ORDER: DealStage[] = ['Due Diligence', 'Entitlements', 'Construction', 'Closeout'];
 
@@ -10,21 +12,30 @@ type Props = { params: Promise<{ id: string }> };
 
 export default async function DealDetailPage({ params }: Props) {
   const { id } = await params;
-  const deal = getDealById(id);
-  if (!deal) notFound();
 
-  const tasks = getTasksForDeal(id);
+  const supabase = await createClient();
+
+  const [{ data: dealData }, { data: tasksData }] = await Promise.all([
+    supabase.from('deals').select('*').eq('id', id).single(),
+    supabase.from('tasks').select('*').eq('deal_id', id).order('created_at'),
+  ]);
+
+  if (!dealData) notFound();
+
+  const deal = dealData as Deal;
+
+  const taskList: Task[] = (tasksData ?? []) as Task[];
 
   const tasksByStage = STAGE_ORDER.reduce<Record<DealStage, Task[]>>(
     (acc, stage) => {
-      acc[stage] = tasks.filter((t) => t.deal_stage === stage);
+      acc[stage] = taskList.filter((t) => t.deal_stage === stage);
       return acc;
     },
     { 'Due Diligence': [], Entitlements: [], Construction: [], Closeout: [] }
   );
 
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter((t) => t.is_complete).length;
+  const totalTasks = taskList.length;
+  const completedTasks = taskList.filter((t) => t.is_complete).length;
   const pct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
@@ -44,7 +55,7 @@ export default async function DealDetailPage({ params }: Props) {
             <div className="flex items-center gap-4 mt-2 text-base text-text-muted">
               <span>{deal.partner}</span>
               <span>·</span>
-              <span>{deal.location}</span>
+              <span>{deal.city + ", " + deal.state}</span>
               <span>·</span>
               <span>{deal.unit_count} Units</span>
             </div>
@@ -94,53 +105,42 @@ export default async function DealDetailPage({ params }: Props) {
                 </span>
               </div>
               <ul className="divide-y divide-border">
-                {stageTasks.map((task) => {
-                  const assignees = getAssigneesForTask(task.id);
-                  return (
-                    <li key={task.id} className="px-8 py-5 flex items-center gap-5">
-                      <div
-                        className={`w-5 h-5 rounded-full border-2 shrink-0 ${
-                          task.is_complete ? 'border-brand' : 'border-gray-300'
-                        }`}
-                        style={task.is_complete ? { background: '#003D79' } : {}}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className={`text-base font-semibold ${task.is_complete ? 'line-through text-text-muted' : 'text-brand'}`}>
-                          {task.title}
-                        </div>
-                        {task.description && (
-                          <div className="text-sm text-text-muted mt-0.5">{task.description}</div>
-                        )}
+                {stageTasks.map((task) => (
+                  <li key={task.id} className="px-8 py-5 flex items-center gap-5">
+                    <div
+                      className={`w-5 h-5 rounded-full border-2 shrink-0 ${
+                        task.is_complete ? 'border-brand' : 'border-gray-300'
+                      }`}
+                      style={task.is_complete ? { background: '#003D79' } : {}}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-base font-semibold ${task.is_complete ? 'line-through text-text-muted' : 'text-brand'}`}>
+                        {task.title}
                       </div>
-                      <div className="flex items-center gap-4 shrink-0">
-                        <PriorityBadge priority={task.priority} />
-                        {task.due_date && (
-                          <span className="text-sm text-text-muted">
-                            Due {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </span>
-                        )}
-                        {assignees.length > 0 && (
-                          <div className="flex -space-x-1">
-                            {assignees.map((u) => (
-                              <div
-                                key={u.id}
-                                title={u.name}
-                                className="w-7 h-7 rounded-full text-white text-xs flex items-center justify-center font-semibold ring-2 ring-white"
-                                style={{ background: '#003D79' }}
-                              >
-                                {u.name.charAt(0)}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
+                      {task.description && (
+                        <div className="text-sm text-text-muted mt-0.5">{task.description}</div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 shrink-0">
+                      <PriorityBadge priority={task.priority} />
+                      {task.due_date && (
+                        <span className="text-sm text-text-muted">
+                          Due {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                ))}
               </ul>
             </div>
           );
         })}
+
+        {taskList.length === 0 && (
+          <div className="bg-surface border border-border rounded-xl p-12 text-center">
+            <p className="text-text-muted text-base">No tasks yet for this deal.</p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,11 +1,11 @@
 import type { User, Deal, Task, TaskAssignment, ActivityLog } from './types';
 
 export const USERS: User[] = [
-  { id: 'u1', name: 'Sarah Mitchell', email: 'smitchell@brighton.com', role: 'admin', is_active: true },
-  { id: 'u2', name: 'James Larsen', email: 'jlarsen@brighton.com', role: 'member', is_active: true },
-  { id: 'u3', name: 'Priya Nair', email: 'pnair@brighton.com', role: 'member', is_active: true },
-  { id: 'u4', name: 'Tom Whitfield', email: 'twhitfield@brighton.com', role: 'member', is_active: true },
-  { id: 'u5', name: 'Dana Reeves', email: 'dreeves@brighton.com', role: 'member', is_active: false },
+  { id: 'u1', first_name: 'Sarah', last_name: 'Mitchell', email: 'smitchell@brighton.com', role: 'admin', is_active: true },
+  { id: 'u2', first_name: 'James', last_name: 'Larsen', email: 'jlarsen@brighton.com', role: 'member', is_active: true },
+  { id: 'u3', first_name: 'Priya', last_name: 'Nair', email: 'pnair@brighton.com', role: 'member', is_active: true },
+  { id: 'u4', first_name: 'Tom', last_name: 'Whitfield', email: 'twhitfield@brighton.com', role: 'member', is_active: true },
+  { id: 'u5', first_name: 'Dana', last_name: 'Reeves', email: 'dreeves@brighton.com', role: 'member', is_active: false },
 ];
 
 export const DEALS: Deal[] = [
@@ -13,7 +13,8 @@ export const DEALS: Deal[] = [
     id: 'd1',
     name: 'Meridian Ridge',
     partner: 'Welltower',
-    location: 'Meridian, ID',
+    city: 'Meridian',
+    state: 'ID',
     unit_count: 210,
     stage: 'Construction',
     start_date: '2025-03-01',
@@ -23,7 +24,8 @@ export const DEALS: Deal[] = [
     id: 'd2',
     name: 'Eagle Bluff',
     partner: 'Welltower',
-    location: 'Eagle, ID',
+    city: 'Eagle',
+    state: 'ID',
     unit_count: 175,
     stage: 'Entitlements',
     start_date: '2025-07-15',
@@ -33,7 +35,8 @@ export const DEALS: Deal[] = [
     id: 'd3',
     name: 'Nampa Crossroads',
     partner: 'Welltower',
-    location: 'Nampa, ID',
+    city: 'Nampa',
+    state: 'ID',
     unit_count: 240,
     stage: 'Due Diligence',
     start_date: '2026-01-10',
@@ -43,7 +46,8 @@ export const DEALS: Deal[] = [
     id: 'd4',
     name: 'Boise Heights',
     partner: 'Welltower',
-    location: 'Boise, ID',
+    city: 'Boise',
+    state: 'ID',
     unit_count: 190,
     stage: 'Closeout',
     start_date: '2024-01-15',

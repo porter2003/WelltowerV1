@@ -14,28 +14,25 @@ export function TopNav() {
   const pathname = usePathname();
 
   return (
-    <header
-      style={{ background: 'linear-gradient(135deg, #003D79 0%, #002b57 100%)' }}
-      className="text-white shadow-md"
-    >
+    <header className="bg-white border-b border-border shadow-sm">
       <div className="max-w-[1400px] mx-auto px-6 h-24 flex items-center justify-between">
 
-        {/* Logo lockup — white pill */}
-        <Link href="/" className="flex items-center gap-4 bg-white rounded-xl px-5 py-2.5 shrink-0">
+        {/* Logo lockup */}
+        <Link href="/" className="flex items-center gap-5 shrink-0">
           <Image
             src="/brighton-logo.png"
             alt="Brighton"
-            height={36}
-            width={180}
+            height={40}
+            width={200}
             className="object-contain"
             priority
           />
-          <span className="w-px h-7 bg-gray-200" />
+          <span className="w-px h-8 bg-gray-200" />
           <Image
-            src="/welltower-logo.jpg"
+            src="/welltower-logo.png"
             alt="Welltower"
-            height={36}
-            width={120}
+            height={40}
+            width={130}
             className="object-contain"
             priority
           />
@@ -52,8 +49,8 @@ export function TopNav() {
                 href={href}
                 className={`px-5 py-2.5 rounded-lg text-base font-semibold tracking-wide transition-colors ${
                   isActive
-                    ? 'bg-white/15 text-white'
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                    ? 'bg-brand-pale text-brand'
+                    : 'text-text-muted hover:text-brand hover:bg-brand-pale'
                 }`}
               >
                 {label}

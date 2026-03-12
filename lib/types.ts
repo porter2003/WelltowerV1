@@ -2,7 +2,8 @@ export type UserRole = 'admin' | 'member' | 'partner';
 
 export type User = {
   id: string;
-  name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   role: UserRole;
   is_active: boolean;
@@ -14,7 +15,9 @@ export type Deal = {
   id: string;
   name: string;
   partner: string;
-  location: string;
+  city: string;
+  state: string;
+  county?: string;
   unit_count: number;
   stage: DealStage;
   start_date: string;

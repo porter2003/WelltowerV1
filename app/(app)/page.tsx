@@ -1,29 +1,30 @@
 import Link from 'next/link';
-import { DEALS, TASKS } from '@/lib/mock-data';
+import { createClient } from '@/lib/supabase-server';
 import { StageBadge } from '@/components/ui/Badge';
+import type { Deal, Task } from '@/lib/types';
 
-export default function DashboardPage() {
+export const revalidate = 0; // always fetch fresh data
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const { data: deals } = await supabase.from('deals').select('*').order('created_at');
+  const { data: tasks } = await supabase.from('tasks').select('*');
+
+  const dealList = (deals ?? []) as unknown as Deal[];
+  const taskList = (tasks ?? []) as unknown as Task[];
+
   return (
     <div>
       {/* Page header */}
-      <div className="flex items-center justify-between mb-10">
-        <div>
-          <h1 className="text-3xl font-extrabold text-brand tracking-tight">Active Deals</h1>
-          <p className="text-text-muted text-base mt-1">Welltower build-to-rent partnerships</p>
-        </div>
-        <Link
-          href="/deals/new"
-          className="text-base font-semibold px-5 py-2.5 rounded-lg text-white transition-opacity hover:opacity-90"
-          style={{ background: '#003D79' }}
-        >
-          + New Deal
-        </Link>
+      <div className="mb-10">
+        <h1 className="text-3xl font-extrabold text-brand tracking-tight">Active Deals</h1>
+        <p className="text-text-muted text-base mt-1">Welltower build-to-rent partnerships</p>
       </div>
 
-      {/* Deal cards — designed for ~3 active deals */}
+      {/* Deal cards */}
       <div className="grid grid-cols-1 gap-6">
-        {DEALS.map((deal) => {
-          const allTasks = TASKS.filter((t) => t.deal_id === deal.id);
+        {dealList.map((deal) => {
+          const allTasks = taskList.filter((t) => t.deal_id === deal.id);
           const completedTasks = allTasks.filter((t) => t.is_complete).length;
           const openTasks = allTasks.length - completedTasks;
           const pct = allTasks.length > 0 ? Math.round((completedTasks / allTasks.length) * 100) : 0;
@@ -47,7 +48,7 @@ export default function DashboardPage() {
                       {deal.name}
                     </h2>
                     <div className="flex items-center gap-3 mt-1.5 text-base text-text-muted">
-                      <span>{deal.location}</span>
+                      <span>{deal.city + ", " + deal.state}</span>
                       <span>·</span>
                       <span>{deal.unit_count} Units</span>
                       <span>·</span>
@@ -124,6 +125,19 @@ export default function DashboardPage() {
             </Link>
           );
         })}
+
+        {dealList.length === 0 && (
+          <div className="bg-surface border border-border rounded-xl p-16 text-center">
+            <p className="text-text-muted text-base">No active deals. Add one to get started.</p>
+            <Link
+              href="/deals/new"
+              className="inline-block mt-4 px-5 py-2.5 rounded-lg text-white text-base font-semibold"
+              style={{ background: '#003D79' }}
+            >
+              + New Deal
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
