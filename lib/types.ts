@@ -54,6 +54,16 @@ export type ActivityLog = {
   timestamp: string;
 };
 
+export type TaskTemplate = {
+  id: string;
+  title: string;
+  description?: string;
+  deal_stage: DealStage;
+  priority: TaskPriority;
+  sort_order: number;
+  created_at: string;
+};
+
 export type AccessRequest = {
   id: string;
   first_name: string;

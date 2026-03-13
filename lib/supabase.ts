@@ -44,6 +44,12 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      task_templates: {
+        Row:    { id: string; title: string; description: string | null; deal_stage: DealStage; priority: 'low' | 'medium' | 'high'; sort_order: number; created_at: string };
+        Insert: { id?: string; title: string; description?: string | null; deal_stage: DealStage; priority?: 'low' | 'medium' | 'high'; sort_order?: number };
+        Update: { title?: string; description?: string | null; deal_stage?: DealStage; priority?: 'low' | 'medium' | 'high'; sort_order?: number };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

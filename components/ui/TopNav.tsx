@@ -8,6 +8,7 @@ const navLinks = [
   { href: '/', label: 'Dashboard' },
   { href: '/deals/new', label: 'New Deal' },
   { href: '/admin/users', label: 'Team' },
+  { href: '/admin/default-tasks', label: 'Default Tasks' },
 ];
 
 export function TopNav() {

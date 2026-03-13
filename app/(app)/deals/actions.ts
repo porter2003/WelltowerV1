@@ -28,6 +28,27 @@ export async function createDeal(formData: FormData) {
 
   if (error) throw new Error(error.message);
 
+  const { data: templates } = await supabase
+    .from('task_templates')
+    .select('*')
+    .order('deal_stage')
+    .order('sort_order');
+
+  if (templates && templates.length > 0) {
+    const now = new Date().toISOString();
+    const tasks = templates.map((t) => ({
+      deal_id: data.id,
+      title: t.title,
+      description: t.description ?? null,
+      deal_stage: t.deal_stage,
+      priority: t.priority,
+      is_complete: false,
+      created_at: now,
+    }));
+    const { error: tasksError } = await supabase.from('tasks').insert(tasks);
+    if (tasksError) throw new Error(tasksError.message);
+  }
+
   redirect(`/deals/${data.id}`);
 }
 
