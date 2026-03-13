@@ -1,8 +1,9 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase-server';
-import type { DealStage } from '@/lib/types';
+import type { DealStage, TaskPriority } from '@/lib/types';
 
 export async function createDeal(formData: FormData) {
   const supabase = await createClient();
@@ -28,4 +29,72 @@ export async function createDeal(formData: FormData) {
   if (error) throw new Error(error.message);
 
   redirect(`/deals/${data.id}`);
+}
+
+export async function createTask(formData: FormData) {
+  const supabase = await createClient();
+
+  const deal_id = formData.get('deal_id') as string;
+  const due_date = (formData.get('due_date') as string) || null;
+
+  const { error } = await supabase.from('tasks').insert({
+    deal_id,
+    title: formData.get('title') as string,
+    description: (formData.get('description') as string) || null,
+    deal_stage: formData.get('deal_stage') as DealStage,
+    priority: (formData.get('priority') as TaskPriority) ?? 'medium',
+    due_date: due_date || null,
+  });
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/deals/${deal_id}`);
+}
+
+export async function toggleTask(taskId: string, dealId: string, currentValue: boolean) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('tasks')
+    .update({
+      is_complete: !currentValue,
+      completed_at: !currentValue ? new Date().toISOString() : null,
+    })
+    .eq('id', taskId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/deals/${dealId}`);
+}
+
+export async function updateTask(
+  taskId: string,
+  dealId: string,
+  updates: { title: string; description?: string; priority: TaskPriority; due_date?: string }
+) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('tasks')
+    .update({
+      title: updates.title,
+      description: updates.description || null,
+      priority: updates.priority,
+      due_date: updates.due_date || null,
+    })
+    .eq('id', taskId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/deals/${dealId}`);
+}
+
+export async function deleteTask(taskId: string, dealId: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/deals/${dealId}`);
 }
