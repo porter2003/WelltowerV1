@@ -53,3 +53,12 @@ export type ActivityLog = {
   action: ActivityAction;
   timestamp: string;
 };
+
+export type AccessRequest = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  message?: string;
+  requested_at: string;
+};

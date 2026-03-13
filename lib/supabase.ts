@@ -38,6 +38,12 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      access_requests: {
+        Row:    { id: string; first_name: string; last_name: string; email: string; message: string | null; requested_at: string };
+        Insert: { id?: string; first_name: string; last_name: string; email: string; message?: string | null };
+        Update: never;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

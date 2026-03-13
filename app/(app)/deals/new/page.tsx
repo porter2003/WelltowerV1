@@ -4,10 +4,18 @@ import type { DealStage } from '@/lib/types';
 
 const STAGES: DealStage[] = ['Due Diligence', 'Entitlements', 'Construction', 'Closeout'];
 
+const US_STATES = [
+  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
+  'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
+  'MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
+  'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
+  'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY',
+];
+
 const inputClass =
   'w-full border-b border-dashed border-gray-300 focus:border-brand focus:border-solid px-0 py-2 text-base text-brand bg-transparent outline-none placeholder:text-text-muted transition-colors';
 
-const labelClass = 'block text-[13px] font-semibold text-brand mb-1.5';
+const labelClass = 'block text-base font-semibold text-brand mb-1.5';
 
 export default function NewDealPage() {
   return (
@@ -24,44 +32,43 @@ export default function NewDealPage() {
 
         <div>
           <label className={labelClass}>Deal Name</label>
-          <input name="name" required placeholder="e.g. Harvest Ridge" className={inputClass} />
+          <input name="name" required className={inputClass} />
         </div>
 
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className={labelClass}>City</label>
-            <input name="city" required placeholder="e.g. Meridian" className={inputClass} />
+            <input name="city" required className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>State</label>
-            <input name="state" required maxLength={2} placeholder="e.g. ID" className={inputClass} style={{ textTransform: 'uppercase' }} />
+            <select name="state" required className={inputClass}>
+              <option value="">— Select —</option>
+              {US_STATES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className={labelClass}>County <span className="font-normal text-text-muted">(optional)</span></label>
-            <input name="county" placeholder="e.g. Ada County" className={inputClass} />
+            <input name="county" className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Unit Count</label>
-            <input name="unit_count" type="number" min="1" required placeholder="e.g. 200" className={inputClass} />
+            <input name="unit_count" type="number" min="1" required className={inputClass} />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className={labelClass}>Stage</label>
-            <select name="stage" className={inputClass}>
-              {STAGES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className={labelClass}>Partner</label>
-            <input value="Welltower" readOnly className={`${inputClass} cursor-default text-text-muted`} />
-          </div>
+        <div>
+          <label className={labelClass}>Stage</label>
+          <select name="stage" className={inputClass}>
+            {STAGES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
         </div>
 
         <div className="grid grid-cols-2 gap-6">

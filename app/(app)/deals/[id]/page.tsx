@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase-server';
-import { StageBadge } from '@/components/ui/Badge';
+import { DealHeader } from '@/components/deals/DealHeader';
 import { TaskStageSection } from '@/components/tasks/TaskStageSection';
 import type { Deal, DealStage, Task } from '@/lib/types';
 
@@ -16,15 +16,29 @@ export default async function DealDetailPage({ params }: Props) {
 
   const supabase = await createClient();
 
-  const [{ data: dealData }, { data: tasksData }] = await Promise.all([
+  const [{ data: dealData }, { data: tasksData }, { data: { user: authUser } }] = await Promise.all([
     supabase.from('deals').select('*').eq('id', id).single(),
-    supabase.from('tasks').select('*').eq('deal_id', id).order('created_at'),
+    supabase
+      .from('tasks')
+      .select('*')
+      .eq('deal_id', id)
+      .order('is_complete', { ascending: false })
+      .order('created_at'),
+    supabase.auth.getUser(),
   ]);
 
   if (!dealData) notFound();
 
   const deal = dealData as Deal;
   const taskList: Task[] = (tasksData ?? []) as Task[];
+
+  // Fetch current user's role to determine admin access
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', authUser?.id ?? '')
+    .single();
+  const isAdmin = profile?.role === 'admin';
 
   const tasksByStage = STAGE_ORDER.reduce<Record<DealStage, Task[]>>(
     (acc, stage) => {
@@ -40,72 +54,21 @@ export default async function DealDetailPage({ params }: Props) {
 
   return (
     <div>
-      {/* Breadcrumb */}
-      <div className="text-base text-text-muted mb-6">
-        <Link href="/" className="hover:text-brand transition-colors">
+      {/* Back button */}
+      <div className="mb-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-white rounded-lg transition-opacity hover:opacity-90"
+          style={{ background: '#003D79' }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-4 h-4">
+            <path fillRule="evenodd" d="M9.78 4.22a.75.75 0 0 1 0 1.06L7.06 8l2.72 2.72a.75.75 0 1 1-1.06 1.06L5.47 8.53a.75.75 0 0 1 0-1.06l3.25-3.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
+          </svg>
           Dashboard
         </Link>
-        <span className="mx-2 text-gray-300">/</span>
-        <span className="text-brand">{deal.name}</span>
       </div>
 
-      {/* Deal header */}
-      <div className="bg-surface border border-border rounded-xl p-8 mb-8 shadow-sm">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-extrabold text-brand">{deal.name}</h1>
-            <div className="flex items-center gap-4 mt-2 text-base text-text-muted">
-              <span>{deal.partner}</span>
-              <span>·</span>
-              <span>{deal.city + ', ' + deal.state}</span>
-              <span>·</span>
-              <span>{deal.unit_count} Units</span>
-            </div>
-          </div>
-          <StageBadge stage={deal.stage} />
-        </div>
-
-        <div className="mt-8 grid grid-cols-3 gap-8 pt-6 border-t border-border">
-          <div>
-            <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.5px] mb-1.5">
-              Start Date
-            </div>
-            <div className="text-brand font-semibold text-base">
-              {new Date(deal.start_date).toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-              })}
-            </div>
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.5px] mb-1.5">
-              Target Completion
-            </div>
-            <div className="text-brand font-semibold text-base">
-              {new Date(deal.target_completion_date).toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-              })}
-            </div>
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.5px] mb-2">
-              Task Progress
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 bg-gray-200 rounded-full h-2">
-                <div
-                  className="h-2 rounded-full"
-                  style={{ width: `${pct}%`, background: '#003D79' }}
-                />
-              </div>
-              <span className="text-brand font-semibold text-sm shrink-0">{pct}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <DealHeader deal={deal} pct={pct} isAdmin={isAdmin} />
 
       {/* Tasks by stage — always show all four stages */}
       <div className="space-y-6">

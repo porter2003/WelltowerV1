@@ -1,4 +1,4 @@
-import { LoginForm } from '@/components/auth/LoginForm';
+import { LoginCard } from '@/components/auth/LoginCard';
 import Image from 'next/image';
 
 export default function LoginPage() {
@@ -12,12 +12,7 @@ export default function LoginPage() {
           <Image src="/welltower-logo.png" alt="Welltower" height={36} width={120} className="object-contain" priority />
         </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-xl border border-border shadow-sm p-8">
-          <h1 className="text-[22px] font-extrabold text-brand mb-1">Sign In</h1>
-          <p className="text-text-muted text-sm mb-6">Brighton — Welltower Partnership Tool</p>
-          <LoginForm />
-        </div>
+        <LoginCard />
       </div>
     </div>
   );

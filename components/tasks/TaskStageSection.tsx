@@ -81,7 +81,7 @@ export function TaskStageSection({ stage, tasks, dealId }: Props) {
   return (
     <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
       {/* Stage header */}
-      <div className="px-8 py-4 border-b border-border bg-brand-pale flex items-center justify-between">
+      <div className="px-8 py-4 border-b border-border bg-brand-100 flex items-center justify-between">
         <h2 className="font-semibold text-brand text-[11px] uppercase tracking-[0.5px]">{stage}</h2>
         <span className="text-[11px] text-text-muted">
           {completedCount}/{tasks.length} complete
@@ -202,14 +202,14 @@ export function TaskStageSection({ stage, tasks, dealId }: Props) {
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => startEdit(task)}
-                        className="p-1.5 rounded-md text-text-muted hover:text-brand hover:bg-brand-pale transition-colors"
+                        className="p-2.5 rounded-md text-text-muted hover:text-brand hover:bg-brand-pale transition-colors"
                         title="Edit task"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 16 16"
                           fill="currentColor"
-                          className="w-3.5 h-3.5"
+                          className="w-6 h-6"
                         >
                           <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.774a2.75 2.75 0 0 0-.596.892l-.848 2.047a.75.75 0 0 0 .98.98l2.047-.848a2.75 2.75 0 0 0 .892-.596l4.261-4.263a1.75 1.75 0 0 0 0-2.474ZM3.75 14A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2H7a.75.75 0 0 1 0 1.5H3.75a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25V9a.75.75 0 0 1 1.5 0v3.25A1.75 1.75 0 0 1 12.25 14h-8.5Z" />
                         </svg>
@@ -234,14 +234,14 @@ export function TaskStageSection({ stage, tasks, dealId }: Props) {
                       ) : (
                         <button
                           onClick={() => setConfirmDeleteId(task.id)}
-                          className="p-1.5 rounded-md text-text-muted hover:text-red-600 hover:bg-red-50 transition-colors"
+                          className="p-2.5 rounded-md text-text-muted hover:text-red-600 hover:bg-red-50 transition-colors"
                           title="Delete task"
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 16 16"
                             fill="currentColor"
-                            className="w-3.5 h-3.5"
+                            className="w-6 h-6"
                           >
                             <path
                               fillRule="evenodd"

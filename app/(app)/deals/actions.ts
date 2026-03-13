@@ -31,6 +31,61 @@ export async function createDeal(formData: FormData) {
   redirect(`/deals/${data.id}`);
 }
 
+export async function updateDeal(
+  dealId: string,
+  updates: {
+    name: string;
+    city: string;
+    state: string;
+    county?: string;
+    unit_count: number;
+    stage: DealStage;
+    start_date: string;
+    target_completion_date: string;
+  }
+) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('deals')
+    .update({
+      name: updates.name,
+      city: updates.city,
+      state: updates.state.toUpperCase(),
+      county: updates.county || null,
+      unit_count: updates.unit_count,
+      stage: updates.stage,
+      start_date: updates.start_date,
+      target_completion_date: updates.target_completion_date,
+    })
+    .eq('id', dealId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/deals/${dealId}`);
+}
+
+export async function deleteDeal(dealId: string) {
+  const supabase = await createClient();
+
+  // Verify admin role
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'admin') throw new Error('Unauthorized');
+
+  const { error } = await supabase.from('deals').delete().eq('id', dealId);
+  if (error) throw new Error(error.message);
+
+  redirect('/');
+}
+
 export async function createTask(formData: FormData) {
   const supabase = await createClient();
 
