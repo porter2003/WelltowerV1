@@ -5,8 +5,6 @@ import { createClient } from '@/lib/supabase-browser';
 import { recordFileUpload, deleteTaskFile } from '@/app/(app)/deals/actions';
 import type { TaskFile } from '@/lib/types';
 
-const supabase = createClient();
-
 type TaskFileWithUploader = TaskFile & {
   profiles: { first_name: string; last_name: string } | null;
 };
@@ -24,6 +22,7 @@ function formatBytes(bytes: number | null): string {
 }
 
 export function TaskFiles({ taskId, isAdmin }: Props) {
+  const [supabase] = useState(() => createClient());
   const [files, setFiles] = useState<TaskFileWithUploader[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
