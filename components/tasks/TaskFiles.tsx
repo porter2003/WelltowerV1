@@ -121,7 +121,7 @@ export function TaskFiles({ taskId, isAdmin }: Props) {
                 <span className="text-xs text-text-muted shrink-0">{formatBytes(f.file_size)}</span>
               )}
               <span className="text-xs text-text-muted shrink-0">
-                {new Date(f.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {new Date(f.uploaded_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
               </span>
 
               {/* Delete (admin only) */}
