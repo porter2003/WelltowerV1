@@ -7,6 +7,10 @@ import type { TaskFile } from '@/lib/types';
 
 const supabase = createClient();
 
+type TaskFileWithUploader = TaskFile & {
+  profiles: { first_name: string; last_name: string } | null;
+};
+
 type Props = {
   taskId: string;
   isAdmin: boolean;
@@ -20,7 +24,7 @@ function formatBytes(bytes: number | null): string {
 }
 
 export function TaskFiles({ taskId, isAdmin }: Props) {
-  const [files, setFiles] = useState<TaskFile[]>([]);
+  const [files, setFiles] = useState<TaskFileWithUploader[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
@@ -34,10 +38,10 @@ export function TaskFiles({ taskId, isAdmin }: Props) {
   async function loadFiles() {
     const { data } = await supabase
       .from('task_files')
-      .select('*')
+      .select('*, profiles(first_name, last_name)')
       .eq('task_id', taskId)
       .order('uploaded_at', { ascending: false });
-    setFiles((data ?? []) as TaskFile[]);
+    setFiles((data ?? []) as TaskFileWithUploader[]);
     setLoading(false);
   }
 
@@ -118,9 +122,14 @@ export function TaskFiles({ taskId, isAdmin }: Props) {
                 {f.file_name}
               </button>
 
-              {/* Size + date */}
+              {/* Size, uploader, date */}
               {f.file_size !== null && (
                 <span className="text-xs text-text-muted shrink-0">{formatBytes(f.file_size)}</span>
+              )}
+              {f.profiles && (
+                <span className="text-xs text-text-muted shrink-0">
+                  {f.profiles.first_name} {f.profiles.last_name}
+                </span>
               )}
               <span className="text-xs text-text-muted shrink-0">
                 {new Date(f.uploaded_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
