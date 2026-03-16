@@ -82,7 +82,6 @@ export function UsersPageClient({ users, isAdmin, currentUserId, accessRequests 
               <th className="text-left px-6 py-3 text-[11px] font-semibold text-brand uppercase tracking-[0.5px]">Name</th>
               <th className="text-left px-6 py-3 text-[11px] font-semibold text-brand uppercase tracking-[0.5px]">Email</th>
               <th className="text-right px-6 py-3 text-[11px] font-semibold text-brand uppercase tracking-[0.5px]">Role</th>
-              <th className="text-right px-6 py-3 text-[11px] font-semibold text-brand uppercase tracking-[0.5px]">Status</th>
               {isAdmin && <th className="px-6 py-3" />}
             </tr>
           </thead>
@@ -111,15 +110,6 @@ export function UsersPageClient({ users, isAdmin, currentUserId, accessRequests 
                   <td className="px-6 py-4 text-right">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${ROLE_STYLES[user.role]}`}>
                       {user.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${user.is_active ? 'text-brand' : 'text-gray-400'}`}>
-                      <span
-                        className="w-1.5 h-1.5 rounded-full"
-                        style={{ background: user.is_active ? '#003D79' : '#94a3b8' }}
-                      />
-                      {user.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   {isAdmin && (
