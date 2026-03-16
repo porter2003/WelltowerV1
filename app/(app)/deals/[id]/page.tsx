@@ -28,6 +28,8 @@ export default async function DealDetailPage({ params }: Props) {
       .select('*')
       .eq('deal_id', id)
       .order('is_complete', { ascending: false })
+      .order('start_date', { ascending: true, nullsFirst: false })
+      .order('due_date', { ascending: true, nullsFirst: false })
       .order('created_at'),
     supabase.auth.getUser(),
     supabase.from('profiles').select('*').eq('is_active', true).order('first_name'),

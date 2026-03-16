@@ -21,9 +21,9 @@ export type Database = {
         Relationships: [];
       };
       tasks: {
-        Row:    { id: string; deal_id: string; title: string; description: string | null; deal_stage: DealStage; priority: 'low' | 'medium' | 'high'; due_date: string | null; is_complete: boolean; completed_at: string | null; created_at: string };
-        Insert: { id?: string; deal_id: string; title: string; description?: string | null; deal_stage: DealStage; priority?: 'low' | 'medium' | 'high'; due_date?: string | null; is_complete?: boolean; completed_at?: string | null };
-        Update: { title?: string; description?: string | null; deal_stage?: DealStage; priority?: 'low' | 'medium' | 'high'; due_date?: string | null; is_complete?: boolean; completed_at?: string | null };
+        Row:    { id: string; deal_id: string; title: string; description: string | null; deal_stage: DealStage; priority: 'low' | 'medium' | 'high'; start_date: string | null; due_date: string | null; is_complete: boolean; completed_at: string | null; created_at: string };
+        Insert: { id?: string; deal_id: string; title: string; description?: string | null; deal_stage: DealStage; priority?: 'low' | 'medium' | 'high'; start_date?: string | null; due_date?: string | null; is_complete?: boolean; completed_at?: string | null };
+        Update: { title?: string; description?: string | null; deal_stage?: DealStage; priority?: 'low' | 'medium' | 'high'; start_date?: string | null; due_date?: string | null; is_complete?: boolean; completed_at?: string | null };
         Relationships: [];
       };
       task_assignments: {
@@ -45,9 +45,9 @@ export type Database = {
         Relationships: [];
       };
       task_templates: {
-        Row:    { id: string; title: string; description: string | null; deal_stage: DealStage; priority: 'low' | 'medium' | 'high'; sort_order: number; created_at: string };
-        Insert: { id?: string; title: string; description?: string | null; deal_stage: DealStage; priority?: 'low' | 'medium' | 'high'; sort_order?: number };
-        Update: { title?: string; description?: string | null; deal_stage?: DealStage; priority?: 'low' | 'medium' | 'high'; sort_order?: number };
+        Row:    { id: string; title: string; description: string | null; deal_stage: DealStage; priority: 'low' | 'medium' | 'high'; sort_order: number; default_start_offset_days: number; default_duration_days: number; created_at: string };
+        Insert: { id?: string; title: string; description?: string | null; deal_stage: DealStage; priority?: 'low' | 'medium' | 'high'; sort_order?: number; default_start_offset_days?: number; default_duration_days?: number };
+        Update: { title?: string; description?: string | null; deal_stage?: DealStage; priority?: 'low' | 'medium' | 'high'; sort_order?: number; default_start_offset_days?: number; default_duration_days?: number };
         Relationships: [];
       };
     };

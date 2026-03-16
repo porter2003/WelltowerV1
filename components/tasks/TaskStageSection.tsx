@@ -19,6 +19,7 @@ type EditForm = {
   title: string;
   description: string;
   priority: TaskPriority;
+  start_date: string;
   due_date: string;
 };
 
@@ -38,6 +39,7 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
     title: '',
     description: '',
     priority: 'medium',
+    start_date: '',
     due_date: '',
   });
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -54,6 +56,7 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
       title: task.title,
       description: task.description ?? '',
       priority: task.priority,
+      start_date: task.start_date ?? '',
       due_date: task.due_date ?? '',
     });
     setConfirmDeleteId(null);
@@ -71,6 +74,7 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
         title: editForm.title,
         description: editForm.description,
         priority: editForm.priority,
+        start_date: editForm.start_date,
         due_date: editForm.due_date,
       });
       setEditingId(null);
@@ -189,12 +193,24 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
                           </option>
                         ))}
                       </select>
-                      <input
-                        type="date"
-                        value={editForm.due_date}
-                        onChange={(e) => setEditForm((f) => ({ ...f, due_date: e.target.value }))}
-                        className="border border-border rounded-lg px-3 py-2 text-sm text-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
-                      />
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-xs text-text-muted shrink-0">Start</label>
+                        <input
+                          type="date"
+                          value={editForm.start_date}
+                          onChange={(e) => setEditForm((f) => ({ ...f, start_date: e.target.value }))}
+                          className="border border-border rounded-lg px-3 py-2 text-sm text-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-xs text-text-muted shrink-0">Due</label>
+                        <input
+                          type="date"
+                          value={editForm.due_date}
+                          onChange={(e) => setEditForm((f) => ({ ...f, due_date: e.target.value }))}
+                          className="border border-border rounded-lg px-3 py-2 text-sm text-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                        />
+                      </div>
                       <div className="flex gap-2 ml-auto">
                         <button
                           onClick={() => handleSaveEdit(task.id)}
@@ -259,10 +275,19 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
                     <div className="flex items-center gap-3 sm:gap-4 flex-wrap pl-8 sm:pl-0 shrink-0">
                       <PriorityBadge priority={task.priority} />
 
+                      {task.start_date && (
+                        <span className="text-sm text-text-muted">
+                          Starts{' '}
+                          {new Date(task.start_date + 'T00:00:00').toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </span>
+                      )}
                       {task.due_date && (
                         <span className="text-sm text-text-muted">
                           Due{' '}
-                          {new Date(task.due_date).toLocaleDateString('en-US', {
+                          {new Date(task.due_date + 'T00:00:00').toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
                           })}
@@ -401,11 +426,22 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
                 </option>
               ))}
             </select>
-            <input
-              type="date"
-              name="due_date"
-              className="border border-border rounded-lg px-3 py-2 text-sm text-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
-            />
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs text-text-muted shrink-0">Start</label>
+              <input
+                type="date"
+                name="start_date"
+                className="border border-border rounded-lg px-3 py-2 text-sm text-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs text-text-muted shrink-0">Due</label>
+              <input
+                type="date"
+                name="due_date"
+                className="border border-border rounded-lg px-3 py-2 text-sm text-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+              />
+            </div>
             <div className="flex gap-2 ml-auto">
               <button
                 type="submit"

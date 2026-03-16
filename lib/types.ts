@@ -33,6 +33,7 @@ export type Task = {
   description?: string;
   deal_stage: DealStage;
   priority: TaskPriority;
+  start_date?: string;
   due_date?: string;
   is_complete: boolean;
   completed_at?: string;
@@ -61,6 +62,8 @@ export type TaskTemplate = {
   deal_stage: DealStage;
   priority: TaskPriority;
   sort_order: number;
+  default_start_offset_days: number;
+  default_duration_days: number;
   created_at: string;
 };
 

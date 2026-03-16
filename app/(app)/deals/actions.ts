@@ -37,15 +37,24 @@ export async function createDeal(formData: FormData) {
 
   if (templates.length > 0) {
     const now = new Date().toISOString();
-    const tasks = templates.map((t) => ({
-      deal_id: data.id,
-      title: t.title,
-      description: t.description ?? null,
-      deal_stage: t.deal_stage,
-      priority: t.priority,
-      is_complete: false,
-      created_at: now,
-    }));
+    const dealStart = new Date(formData.get('start_date') as string);
+    const tasks = templates.map((t) => {
+      const taskStart = new Date(dealStart);
+      taskStart.setDate(taskStart.getDate() + t.default_start_offset_days);
+      const taskDue = new Date(taskStart);
+      taskDue.setDate(taskDue.getDate() + t.default_duration_days);
+      return {
+        deal_id: data.id,
+        title: t.title,
+        description: t.description ?? null,
+        deal_stage: t.deal_stage,
+        priority: t.priority,
+        start_date: taskStart.toISOString().slice(0, 10),
+        due_date: taskDue.toISOString().slice(0, 10),
+        is_complete: false,
+        created_at: now,
+      };
+    });
     const { error: tasksError } = await supabase.from('tasks').insert(tasks);
     if (tasksError) throw new Error(tasksError.message);
   }
@@ -112,7 +121,6 @@ export async function createTask(formData: FormData) {
   const supabase = await createClient();
 
   const deal_id = formData.get('deal_id') as string;
-  const due_date = (formData.get('due_date') as string) || null;
 
   const { error } = await supabase.from('tasks').insert({
     deal_id,
@@ -120,7 +128,8 @@ export async function createTask(formData: FormData) {
     description: (formData.get('description') as string) || null,
     deal_stage: formData.get('deal_stage') as DealStage,
     priority: (formData.get('priority') as TaskPriority) ?? 'medium',
-    due_date: due_date || null,
+    start_date: (formData.get('start_date') as string) || null,
+    due_date: (formData.get('due_date') as string) || null,
   });
 
   if (error) throw new Error(error.message);
@@ -147,7 +156,7 @@ export async function toggleTask(taskId: string, dealId: string, currentValue: b
 export async function updateTask(
   taskId: string,
   dealId: string,
-  updates: { title: string; description?: string; priority: TaskPriority; due_date?: string }
+  updates: { title: string; description?: string; priority: TaskPriority; start_date?: string; due_date?: string }
 ) {
   const supabase = await createClient();
 
@@ -157,6 +166,7 @@ export async function updateTask(
       title: updates.title,
       description: updates.description || null,
       priority: updates.priority,
+      start_date: updates.start_date || null,
       due_date: updates.due_date || null,
     })
     .eq('id', taskId);

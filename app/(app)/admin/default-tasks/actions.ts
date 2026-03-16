@@ -22,6 +22,8 @@ export async function createTemplate(formData: FormData) {
     deal_stage: formData.get('deal_stage') as DealStage,
     priority: formData.get('priority') as TaskPriority,
     sort_order: parseInt(formData.get('sort_order') as string, 10) || 0,
+    default_start_offset_days: parseInt(formData.get('default_start_offset_days') as string, 10) || 0,
+    default_duration_days: Math.max(1, parseInt(formData.get('default_duration_days') as string, 10) || 1),
   });
 
   if (error) throw new Error(error.message);
@@ -30,7 +32,15 @@ export async function createTemplate(formData: FormData) {
 
 export async function updateTemplate(
   id: string,
-  updates: { title: string; description?: string; deal_stage: DealStage; priority: TaskPriority; sort_order: number }
+  updates: {
+    title: string;
+    description?: string;
+    deal_stage: DealStage;
+    priority: TaskPriority;
+    sort_order: number;
+    default_start_offset_days: number;
+    default_duration_days: number;
+  }
 ) {
   const supabase = await requireAdmin();
 
@@ -42,6 +52,8 @@ export async function updateTemplate(
       deal_stage: updates.deal_stage,
       priority: updates.priority,
       sort_order: updates.sort_order,
+      default_start_offset_days: updates.default_start_offset_days,
+      default_duration_days: Math.max(1, updates.default_duration_days),
     })
     .eq('id', id);
 
