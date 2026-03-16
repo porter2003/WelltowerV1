@@ -8,7 +8,7 @@ import { avatarColor } from '@/lib/avatar';
 import type { User } from '@/lib/types';
 
 const navLinks = [
-  { href: '/', label: 'Dashboard' },
+  { href: '/', label: 'Deals' },
   { href: '/deals/new', label: 'New Deal' },
   { href: '/admin/users', label: 'Team' },
   { href: '/admin/default-tasks', label: 'Default Tasks' },
