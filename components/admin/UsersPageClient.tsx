@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { InviteUserForm } from './InviteUserForm';
 import { deleteUser, approveRequest, dismissRequest } from '@/app/(app)/admin/actions';
+import { avatarColor } from '@/lib/avatar';
 import type { User, AccessRequest, UserRole } from '@/lib/types';
 
 const ROLE_STYLES: Record<string, string> = {
@@ -89,9 +90,9 @@ export function UsersPageClient({ users, isAdmin, currentUserId, accessRequests 
                     <div className="flex items-center gap-3">
                       <div
                         className="w-8 h-8 rounded-full text-white text-sm flex items-center justify-center font-semibold shrink-0"
-                        style={{ background: '#003D79' }}
+                        style={{ background: avatarColor(user.id) }}
                       >
-                        {user.first_name.charAt(0)}
+                        {user.first_name.charAt(0)}{user.last_name.charAt(0)}
                       </div>
                       <span className="font-semibold text-brand text-sm">
                         {user.first_name} {user.last_name}
@@ -173,9 +174,9 @@ export function UsersPageClient({ users, isAdmin, currentUserId, accessRequests 
               <div key={req.id} className="px-6 py-4 flex items-start gap-4">
                 <div
                   className="w-9 h-9 rounded-full text-white text-sm flex items-center justify-center font-semibold shrink-0 mt-0.5"
-                  style={{ background: '#003D79' }}
+                  style={{ background: avatarColor(req.email) }}
                 >
-                  {req.first_name.charAt(0)}
+                  {req.first_name.charAt(0)}{req.last_name.charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-brand text-sm">{req.first_name} {req.last_name}</p>

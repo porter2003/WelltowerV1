@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase-server';
 import { DealHeader } from '@/components/deals/DealHeader';
 import { TaskStageSection } from '@/components/tasks/TaskStageSection';
-import type { Deal, DealStage, Task } from '@/lib/types';
+import type { Deal, DealStage, Task, User } from '@/lib/types';
 
 export const revalidate = 0;
 
@@ -16,7 +16,12 @@ export default async function DealDetailPage({ params }: Props) {
 
   const supabase = await createClient();
 
-  const [{ data: dealData }, { data: tasksData }, { data: { user: authUser } }] = await Promise.all([
+  const [
+    { data: dealData },
+    { data: tasksData },
+    { data: { user: authUser } },
+    { data: usersData },
+  ] = await Promise.all([
     supabase.from('deals').select('*').eq('id', id).single(),
     supabase
       .from('tasks')
@@ -25,20 +30,38 @@ export default async function DealDetailPage({ params }: Props) {
       .order('is_complete', { ascending: false })
       .order('created_at'),
     supabase.auth.getUser(),
+    supabase.from('profiles').select('*').eq('is_active', true).order('first_name'),
   ]);
 
   if (!dealData) notFound();
 
   const deal = dealData as Deal;
   const taskList: Task[] = (tasksData ?? []) as Task[];
+  const users: User[] = (usersData ?? []) as User[];
 
-  // Fetch current user's role to determine admin access
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', authUser?.id ?? '')
-    .single();
+  // Fetch current user's role and task assignments
+  const taskIds = taskList.map((t) => t.id);
+
+  const [{ data: profile }, { data: assignmentsData }] = await Promise.all([
+    supabase.from('profiles').select('role').eq('id', authUser?.id ?? '').single(),
+    taskIds.length > 0
+      ? supabase.from('task_assignments').select('task_id, user_id').in('task_id', taskIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
   const isAdmin = profile?.role === 'admin';
+
+  // Build map of taskId -> User[]
+  const assignmentsByTaskId: Record<string, User[]> = {};
+  for (const assignment of assignmentsData ?? []) {
+    const user = users.find((u) => u.id === assignment.user_id);
+    if (user) {
+      if (!assignmentsByTaskId[assignment.task_id]) {
+        assignmentsByTaskId[assignment.task_id] = [];
+      }
+      assignmentsByTaskId[assignment.task_id].push(user);
+    }
+  }
 
   const tasksByStage = STAGE_ORDER.reduce<Record<DealStage, Task[]>>(
     (acc, stage) => {
@@ -78,6 +101,9 @@ export default async function DealDetailPage({ params }: Props) {
             stage={stage}
             tasks={tasksByStage[stage]}
             dealId={id}
+            isAdmin={isAdmin}
+            users={users}
+            assignmentsByTaskId={assignmentsByTaskId}
           />
         ))}
       </div>

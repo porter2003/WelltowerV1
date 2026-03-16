@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase-server';
-import type { DealStage, TaskPriority } from '@/lib/types';
+import type { DealStage, TaskPriority, TaskTemplate } from '@/lib/types';
 
 export async function createDeal(formData: FormData) {
   const supabase = await createClient();
@@ -28,13 +28,14 @@ export async function createDeal(formData: FormData) {
 
   if (error) throw new Error(error.message);
 
-  const { data: templates } = await supabase
+  const { data: templatesRaw } = await supabase
     .from('task_templates')
     .select('*')
     .order('deal_stage')
     .order('sort_order');
+  const templates = (templatesRaw ?? []) as TaskTemplate[];
 
-  if (templates && templates.length > 0) {
+  if (templates.length > 0) {
     const now = new Date().toISOString();
     const tasks = templates.map((t) => ({
       deal_id: data.id,
@@ -169,6 +170,32 @@ export async function deleteTask(taskId: string, dealId: string) {
   const supabase = await createClient();
 
   const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/deals/${dealId}`);
+}
+
+export async function assignUserToTask(taskId: string, userId: string, dealId: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('task_assignments')
+    .insert({ task_id: taskId, user_id: userId });
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/deals/${dealId}`);
+}
+
+export async function unassignUserFromTask(taskId: string, userId: string, dealId: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('task_assignments')
+    .delete()
+    .eq('task_id', taskId)
+    .eq('user_id', userId);
 
   if (error) throw new Error(error.message);
 
