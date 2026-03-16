@@ -64,18 +64,25 @@ export function TaskFiles({ taskId, isAdmin }: Props) {
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
-  async function handleDownload(filePath: string, fileName: string) {
+  async function handleOpen(filePath: string, fileName: string) {
     const { data } = await supabase.storage
       .from('task-files')
       .createSignedUrl(filePath, 3600);
 
-    if (data?.signedUrl) {
-      const a = document.createElement('a');
-      a.href = data.signedUrl;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+    if (!data?.signedUrl) return;
+
+    const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
+    const officeTypes = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'];
+
+    if (officeTypes.includes(ext)) {
+      // Open Office files via Microsoft Online Viewer
+      window.open(
+        `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(data.signedUrl)}`,
+        '_blank'
+      );
+    } else {
+      // PDFs, images, etc. open natively in a new tab
+      window.open(data.signedUrl, '_blank');
     }
   }
 
@@ -101,7 +108,7 @@ export function TaskFiles({ taskId, isAdmin }: Props) {
 
               {/* File name — download on click */}
               <button
-                onClick={() => handleDownload(f.file_path, f.file_name)}
+                onClick={() => handleOpen(f.file_path, f.file_name)}
                 className="text-sm text-brand hover:underline truncate max-w-[180px] sm:max-w-[300px] text-left"
                 title={f.file_name}
               >
