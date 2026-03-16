@@ -41,22 +41,22 @@ export function TopNav({ currentUser }: Props) {
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-24 flex items-center justify-between">
 
         {/* Logo lockup */}
-        <Link href="/" className="flex items-center gap-3 sm:gap-5 shrink-0 min-w-0">
+        <Link href="/" className="flex items-center gap-2 sm:gap-5 shrink-0 min-w-0">
           <Image
             src="/brighton-logo.png"
             alt="Brighton"
             height={40}
             width={200}
-            className="object-contain w-[130px] sm:w-[200px]"
+            className="object-contain w-[100px] sm:w-[200px]"
             priority
           />
-          <span className="hidden sm:block w-px h-8 bg-gray-200" />
+          <span className="w-px h-6 sm:h-8 bg-gray-200" />
           <Image
             src="/welltower-logo.png"
             alt="Welltower"
             height={40}
             width={130}
-            className="hidden sm:block object-contain"
+            className="object-contain w-[80px] sm:w-[130px]"
             priority
           />
         </Link>
