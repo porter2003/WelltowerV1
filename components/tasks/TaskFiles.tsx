@@ -23,6 +23,7 @@ export function TaskFiles({ taskId, isAdmin }: Props) {
   const [files, setFiles] = useState<TaskFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -89,6 +90,7 @@ export function TaskFiles({ taskId, isAdmin }: Props) {
 
   async function handleDelete(fileId: string, filePath: string) {
     setDeletingId(fileId);
+    setConfirmRemoveId(null);
     await deleteTaskFile(fileId, filePath);
     await loadFiles();
     setDeletingId(null);
@@ -126,14 +128,31 @@ export function TaskFiles({ taskId, isAdmin }: Props) {
 
               {/* Delete (admin only) */}
               {isAdmin && (
-                <button
-                  onClick={() => handleDelete(f.id, f.file_path)}
-                  disabled={deletingId === f.id}
-                  className="ml-auto text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition-colors shrink-0"
-                  title="Remove file"
-                >
-                  Remove
-                </button>
+                confirmRemoveId === f.id ? (
+                  <div className="ml-auto flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => handleDelete(f.id, f.file_path)}
+                      disabled={deletingId === f.id}
+                      className="px-2 py-0.5 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 transition-colors"
+                    >
+                      {deletingId === f.id ? 'Removing…' : 'Remove'}
+                    </button>
+                    <button
+                      onClick={() => setConfirmRemoveId(null)}
+                      className="px-2 py-0.5 text-xs border border-border rounded text-text-muted hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmRemoveId(f.id)}
+                    className="ml-auto text-xs text-red-400 hover:text-red-600 transition-colors shrink-0"
+                    title="Remove file"
+                  >
+                    Remove
+                  </button>
+                )
               )}
             </li>
           ))}
