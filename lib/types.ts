@@ -35,9 +35,21 @@ export type Task = {
   priority: TaskPriority;
   start_date?: string;
   due_date?: string;
+  doc_link?: string;
   is_complete: boolean;
   completed_at?: string;
   created_at: string;
+};
+
+export type TaskFile = {
+  id: string;
+  task_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number | null;
+  mime_type: string | null;
+  uploaded_by: string | null;
+  uploaded_at: string;
 };
 
 export type TaskAssignment = {

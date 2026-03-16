@@ -12,6 +12,7 @@ import {
 } from '@/app/(app)/deals/actions';
 import type { Task, DealStage, TaskPriority, User } from '@/lib/types';
 import { avatarColor } from '@/lib/avatar';
+import { TaskFiles } from '@/components/tasks/TaskFiles';
 
 const PRIORITY_OPTIONS: TaskPriority[] = ['low', 'medium', 'high'];
 
@@ -21,6 +22,7 @@ type EditForm = {
   priority: TaskPriority;
   start_date: string;
   due_date: string;
+  doc_link: string;
 };
 
 type Props = {
@@ -41,9 +43,11 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
     priority: 'medium',
     start_date: '',
     due_date: '',
+    doc_link: '',
   });
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [assignDropdownId, setAssignDropdownId] = useState<string | null>(null);
+  const [expandedFilesId, setExpandedFilesId] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
   const [isPending, startTransition] = useTransition();
   const addFormRef = useRef<HTMLFormElement>(null);
@@ -58,6 +62,7 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
       priority: task.priority,
       start_date: task.start_date ?? '',
       due_date: task.due_date ?? '',
+      doc_link: task.doc_link ?? '',
     });
     setConfirmDeleteId(null);
     setAssignDropdownId(null);
@@ -76,6 +81,7 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
         priority: editForm.priority,
         start_date: editForm.start_date,
         due_date: editForm.due_date,
+        doc_link: editForm.doc_link,
       });
       setEditingId(null);
     });
@@ -179,6 +185,12 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
                       className="w-full border border-border rounded-lg px-3 py-2 text-sm text-text-muted focus:outline-none focus:ring-2 focus:ring-brand/30"
                       placeholder="Description (optional)"
                     />
+                    <input
+                      value={editForm.doc_link}
+                      onChange={(e) => setEditForm((f) => ({ ...f, doc_link: e.target.value }))}
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm text-text-muted focus:outline-none focus:ring-2 focus:ring-brand/30"
+                      placeholder="Document link — Google Drive, SharePoint, etc. (optional)"
+                    />
                     <div className="flex items-center gap-3 flex-wrap">
                       <select
                         value={editForm.priority}
@@ -258,12 +270,29 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
 
                       {/* Title + description */}
                       <div className="flex-1 min-w-0">
-                        <div
-                          className={`text-base font-semibold ${
-                            task.is_complete ? 'line-through text-text-muted' : 'text-brand'
-                          }`}
-                        >
-                          {task.title}
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`text-base font-semibold ${
+                              task.is_complete ? 'line-through text-text-muted' : 'text-brand'
+                            }`}
+                          >
+                            {task.title}
+                          </span>
+                          {task.doc_link && (
+                            <a
+                              href={task.doc_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-brand/60 hover:text-brand transition-colors shrink-0"
+                              title="Open linked document"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+                                <path d="M6.22 8.72a.75.75 0 0 0 1.06 1.06l5.22-5.22v1.69a.75.75 0 0 0 1.5 0v-3.5a.75.75 0 0 0-.75-.75h-3.5a.75.75 0 0 0 0 1.5h1.69L6.22 8.72Z" />
+                                <path d="M3.5 6.75c0-.69.56-1.25 1.25-1.25H7A.75.75 0 0 0 7 4H4.75A2.75 2.75 0 0 0 2 6.75v4.5A2.75 2.75 0 0 0 4.75 14h4.5A2.75 2.75 0 0 0 12 11.25V9a.75.75 0 0 0-1.5 0v2.25c0 .69-.56 1.25-1.25 1.25h-4.5c-.69 0-1.25-.56-1.25-1.25v-4.5Z" />
+                              </svg>
+                            </a>
+                          )}
                         </div>
                         {task.description && (
                           <div className="text-sm text-text-muted mt-0.5">{task.description}</div>
@@ -344,6 +373,20 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
                         )}
                       </div>
 
+                      {/* Files toggle */}
+                      <button
+                        onClick={() => setExpandedFilesId(expandedFilesId === task.id ? null : task.id)}
+                        className={`flex items-center gap-1 text-xs transition-colors ${
+                          expandedFilesId === task.id ? 'text-brand' : 'text-text-muted hover:text-brand'
+                        }`}
+                        title="Show files"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+                          <path fillRule="evenodd" d="M4 2a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V6.621a1.5 1.5 0 0 0-.44-1.06L9.94 2.439A1.5 1.5 0 0 0 8.878 2H4Zm1 7.25a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1-.75-.75Zm.75-3.25a.75.75 0 0 0 0 1.5H8A.75.75 0 0 0 8 6H5.75Z" clipRule="evenodd" />
+                        </svg>
+                        Files
+                      </button>
+
                       {/* Edit / Delete — always visible on mobile, hover-only on desktop */}
                       <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                         <button
@@ -386,6 +429,11 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
                       </div>
                     </div>
                   </div>
+                )}
+
+                {/* Expandable file attachments */}
+                {expandedFilesId === task.id && editingId !== task.id && (
+                  <TaskFiles taskId={task.id} isAdmin={isAdmin} />
                 )}
               </li>
             );

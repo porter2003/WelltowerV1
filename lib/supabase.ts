@@ -21,9 +21,15 @@ export type Database = {
         Relationships: [];
       };
       tasks: {
-        Row:    { id: string; deal_id: string; title: string; description: string | null; deal_stage: DealStage; priority: 'low' | 'medium' | 'high'; start_date: string | null; due_date: string | null; is_complete: boolean; completed_at: string | null; created_at: string };
-        Insert: { id?: string; deal_id: string; title: string; description?: string | null; deal_stage: DealStage; priority?: 'low' | 'medium' | 'high'; start_date?: string | null; due_date?: string | null; is_complete?: boolean; completed_at?: string | null };
-        Update: { title?: string; description?: string | null; deal_stage?: DealStage; priority?: 'low' | 'medium' | 'high'; start_date?: string | null; due_date?: string | null; is_complete?: boolean; completed_at?: string | null };
+        Row:    { id: string; deal_id: string; title: string; description: string | null; deal_stage: DealStage; priority: 'low' | 'medium' | 'high'; start_date: string | null; due_date: string | null; doc_link: string | null; is_complete: boolean; completed_at: string | null; created_at: string };
+        Insert: { id?: string; deal_id: string; title: string; description?: string | null; deal_stage: DealStage; priority?: 'low' | 'medium' | 'high'; start_date?: string | null; due_date?: string | null; doc_link?: string | null; is_complete?: boolean; completed_at?: string | null };
+        Update: { title?: string; description?: string | null; deal_stage?: DealStage; priority?: 'low' | 'medium' | 'high'; start_date?: string | null; due_date?: string | null; doc_link?: string | null; is_complete?: boolean; completed_at?: string | null };
+        Relationships: [];
+      };
+      task_files: {
+        Row:    { id: string; task_id: string; file_name: string; file_path: string; file_size: number | null; mime_type: string | null; uploaded_by: string | null; uploaded_at: string };
+        Insert: { id?: string; task_id: string; file_name: string; file_path: string; file_size?: number | null; mime_type?: string | null; uploaded_by?: string | null };
+        Update: never;
         Relationships: [];
       };
       task_assignments: {

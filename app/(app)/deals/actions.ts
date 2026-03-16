@@ -156,7 +156,7 @@ export async function toggleTask(taskId: string, dealId: string, currentValue: b
 export async function updateTask(
   taskId: string,
   dealId: string,
-  updates: { title: string; description?: string; priority: TaskPriority; start_date?: string; due_date?: string }
+  updates: { title: string; description?: string; priority: TaskPriority; start_date?: string; due_date?: string; doc_link?: string }
 ) {
   const supabase = await createClient();
 
@@ -168,12 +168,45 @@ export async function updateTask(
       priority: updates.priority,
       start_date: updates.start_date || null,
       due_date: updates.due_date || null,
+      doc_link: updates.doc_link || null,
     })
     .eq('id', taskId);
 
   if (error) throw new Error(error.message);
 
   revalidatePath(`/deals/${dealId}`);
+}
+
+export async function recordFileUpload(
+  taskId: string,
+  fileName: string,
+  filePath: string,
+  fileSize: number,
+  mimeType: string
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase.from('task_files').insert({
+    task_id: taskId,
+    file_name: fileName,
+    file_path: filePath,
+    file_size: fileSize,
+    mime_type: mimeType,
+    uploaded_by: user.id,
+  });
+
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteTaskFile(fileId: string, filePath: string) {
+  const supabase = await createClient();
+
+  await supabase.storage.from('task-files').remove([filePath]);
+
+  const { error } = await supabase.from('task_files').delete().eq('id', fileId);
+  if (error) throw new Error(error.message);
 }
 
 export async function deleteTask(taskId: string, dealId: string) {
