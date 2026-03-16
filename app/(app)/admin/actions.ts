@@ -6,7 +6,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createClient } from '@/lib/supabase-server';
 import type { UserRole } from '@/lib/types';
 
-export async function inviteUser(formData: FormData) {
+export async function inviteUser(formData: FormData): Promise<{ error: string } | void> {
   const first_name = formData.get('first_name') as string;
   const last_name = formData.get('last_name') as string;
   const email = formData.get('email') as string;
@@ -16,7 +16,7 @@ export async function inviteUser(formData: FormData) {
     data: { first_name, last_name, role },
   });
 
-  if (inviteError) throw new Error(inviteError.message);
+  if (inviteError) return { error: inviteError.message };
 
   const { error: profileError } = await supabaseAdmin.from('profiles').insert({
     id: authData.user.id,
@@ -27,15 +27,15 @@ export async function inviteUser(formData: FormData) {
     is_active: true,
   });
 
-  if (profileError) throw new Error(profileError.message);
+  if (profileError) return { error: profileError.message };
 
   redirect('/admin/users');
 }
 
-export async function approveRequest(requestId: string, formData: FormData) {
+export async function approveRequest(requestId: string, formData: FormData): Promise<{ error: string } | void> {
   const supabase = await createClient();
   const { data: { user: authUser } } = await supabase.auth.getUser();
-  if (!authUser) throw new Error('Not authenticated');
+  if (!authUser) return { error: 'Not authenticated' };
 
   const { data: callerProfile } = await supabase
     .from('profiles')
@@ -43,7 +43,7 @@ export async function approveRequest(requestId: string, formData: FormData) {
     .eq('id', authUser.id)
     .single();
 
-  if (callerProfile?.role !== 'admin') throw new Error('Unauthorized');
+  if (callerProfile?.role !== 'admin') return { error: 'Unauthorized' };
 
   const first_name = formData.get('first_name') as string;
   const last_name = formData.get('last_name') as string;
@@ -54,7 +54,7 @@ export async function approveRequest(requestId: string, formData: FormData) {
     data: { first_name, last_name, role },
   });
 
-  if (inviteError) throw new Error(inviteError.message);
+  if (inviteError) return { error: inviteError.message };
 
   const { error: profileError } = await supabaseAdmin.from('profiles').insert({
     id: authData.user.id,
@@ -65,7 +65,7 @@ export async function approveRequest(requestId: string, formData: FormData) {
     is_active: true,
   });
 
-  if (profileError) throw new Error(profileError.message);
+  if (profileError) return { error: profileError.message };
 
   // Remove the request now that it's been approved
   await supabaseAdmin.from('access_requests').delete().eq('id', requestId);

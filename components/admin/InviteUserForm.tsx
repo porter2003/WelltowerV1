@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { inviteUser } from '@/app/(app)/admin/actions';
 
 const inputClass =
@@ -8,11 +9,17 @@ const inputClass =
 const labelClass = 'block text-[12px] font-semibold text-brand mb-1';
 
 export function InviteUserForm({ onCancel }: { onCancel: () => void }) {
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(formData: FormData) {
+    setError(null);
+    const result = await inviteUser(formData);
+    if (result?.error) setError(result.error);
+  }
+
   return (
     <form
-      action={async (formData) => {
-        await inviteUser(formData);
-      }}
+      action={handleSubmit}
       className="border-t border-border px-6 py-5 bg-brand-pale/40"
     >
       <p className="text-[12px] font-semibold text-brand uppercase tracking-[0.5px] mb-4">Invite New Team Member</p>
@@ -37,6 +44,9 @@ export function InviteUserForm({ onCancel }: { onCancel: () => void }) {
           </select>
         </div>
       </div>
+      {error && (
+        <p className="mt-3 text-sm text-red-600">{error}</p>
+      )}
       <div className="flex items-center gap-4 mt-5">
         <button
           type="submit"

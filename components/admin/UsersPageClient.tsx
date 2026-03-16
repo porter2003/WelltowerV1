@@ -24,6 +24,7 @@ export function UsersPageClient({ users, isAdmin, currentUserId, accessRequests 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [approveRoles, setApproveRoles] = useState<Record<string, UserRole>>({});
+  const [approveErrors, setApproveErrors] = useState<Record<string, string>>({});
   const [isPending, startTransition] = useTransition();
 
   function handleDelete(userId: string) {
@@ -41,8 +42,12 @@ export function UsersPageClient({ users, isAdmin, currentUserId, accessRequests 
     formData.set('email', req.email);
     formData.set('role', role);
     startTransition(async () => {
-      await approveRequest(req.id, formData);
-      setApprovingId(null);
+      const result = await approveRequest(req.id, formData);
+      if (result?.error) {
+        setApproveErrors((e) => ({ ...e, [req.id]: result.error }));
+      } else {
+        setApprovingId(null);
+      }
     });
   }
 
@@ -190,28 +195,33 @@ export function UsersPageClient({ users, isAdmin, currentUserId, accessRequests 
                 </div>
 
                 {approvingId === req.id ? (
-                  <div className="flex items-center gap-2 shrink-0">
-                    <select
-                      value={approveRoles[req.id] ?? 'member'}
-                      onChange={(e) => setApproveRoles((r) => ({ ...r, [req.id]: e.target.value as UserRole }))}
-                      className="border border-border rounded-lg px-2 py-1.5 text-sm text-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
-                    >
-                      <option value="member">Member</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                    <button
-                      onClick={() => handleApprove(req)}
-                      disabled={isPending}
-                      className="px-3 py-1.5 text-xs bg-brand text-white rounded-lg hover:bg-brand/90 disabled:opacity-50 transition-opacity"
-                    >
-                      {isPending ? 'Inviting…' : 'Send Invite'}
-                    </button>
-                    <button
-                      onClick={() => setApprovingId(null)}
-                      className="px-3 py-1.5 text-xs border border-border rounded-lg text-text-muted hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={approveRoles[req.id] ?? 'member'}
+                        onChange={(e) => setApproveRoles((r) => ({ ...r, [req.id]: e.target.value as UserRole }))}
+                        className="border border-border rounded-lg px-2 py-1.5 text-sm text-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                      >
+                        <option value="member">Member</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                      <button
+                        onClick={() => handleApprove(req)}
+                        disabled={isPending}
+                        className="px-3 py-1.5 text-xs bg-brand text-white rounded-lg hover:bg-brand/90 disabled:opacity-50 transition-opacity"
+                      >
+                        {isPending ? 'Inviting…' : 'Send Invite'}
+                      </button>
+                      <button
+                        onClick={() => { setApprovingId(null); setApproveErrors((e) => { const n = {...e}; delete n[req.id]; return n; }); }}
+                        className="px-3 py-1.5 text-xs border border-border rounded-lg text-text-muted hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    {approveErrors[req.id] && (
+                      <p className="text-xs text-red-600">{approveErrors[req.id]}</p>
+                    )}
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 shrink-0">
