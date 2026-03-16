@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase-browser';
 import { recordFileUpload, deleteTaskFile } from '@/app/(app)/deals/actions';
 import type { TaskFile } from '@/lib/types';
+
+const supabase = createClient();
 
 type Props = {
   taskId: string;
