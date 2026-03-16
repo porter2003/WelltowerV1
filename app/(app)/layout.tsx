@@ -15,7 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <>
       <TopNav currentUser={data as User | null} />
-      <main className="max-w-[1400px] mx-auto px-6 py-8">{children}</main>
+      <main className="max-w-[1400px] mx-auto px-4 py-6 sm:px-6 sm:py-8">{children}</main>
     </>
   );
 }

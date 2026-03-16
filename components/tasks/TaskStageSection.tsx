@@ -107,7 +107,7 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
   return (
     <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
       {/* Stage header */}
-      <div className="px-8 py-4 border-b border-border bg-brand-100 flex items-center justify-between">
+      <div className="px-4 py-3 sm:px-8 sm:py-4 border-b border-border bg-brand-100 flex items-center justify-between">
         <h2 className="font-semibold text-brand text-[11px] uppercase tracking-[0.5px]">{stage}</h2>
         <span className="text-[11px] text-text-muted">
           {completedCount}/{tasks.length} complete
@@ -159,7 +159,7 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
             const unassignedUsers = users.filter((u) => !assignees.some((a) => a.id === u.id));
 
             return (
-              <li key={task.id} className="px-8 py-5">
+              <li key={task.id} className="px-4 py-4 sm:px-8 sm:py-5">
                 {editingId === task.id ? (
                   /* ── Edit mode ── */
                   <div className="space-y-3">
@@ -214,46 +214,49 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
                   </div>
                 ) : (
                   /* ── View mode ── */
-                  <div className="flex items-center gap-5 group">
-                    {/* Complete toggle */}
-                    <button
-                      onClick={() => handleToggle(task)}
-                      disabled={isPending}
-                      className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${
-                        task.is_complete
-                          ? 'border-brand bg-brand'
-                          : 'border-gray-300 hover:border-brand'
-                      }`}
-                    >
-                      {task.is_complete && (
-                        <svg viewBox="0 0 12 12" fill="none" className="w-3 h-3">
-                          <path
-                            d="M2 6l3 3 5-5"
-                            stroke="white"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      )}
-                    </button>
-
-                    {/* Title + description */}
-                    <div className="flex-1 min-w-0">
-                      <div
-                        className={`text-base font-semibold ${
-                          task.is_complete ? 'line-through text-text-muted' : 'text-brand'
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-5 group">
+                    {/* Top row: checkbox + title/description */}
+                    <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+                      {/* Complete toggle */}
+                      <button
+                        onClick={() => handleToggle(task)}
+                        disabled={isPending}
+                        className={`w-5 h-5 mt-0.5 sm:mt-0 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${
+                          task.is_complete
+                            ? 'border-brand bg-brand'
+                            : 'border-gray-300 hover:border-brand'
                         }`}
                       >
-                        {task.title}
+                        {task.is_complete && (
+                          <svg viewBox="0 0 12 12" fill="none" className="w-3 h-3">
+                            <path
+                              d="M2 6l3 3 5-5"
+                              stroke="white"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        )}
+                      </button>
+
+                      {/* Title + description */}
+                      <div className="flex-1 min-w-0">
+                        <div
+                          className={`text-base font-semibold ${
+                            task.is_complete ? 'line-through text-text-muted' : 'text-brand'
+                          }`}
+                        >
+                          {task.title}
+                        </div>
+                        {task.description && (
+                          <div className="text-sm text-text-muted mt-0.5">{task.description}</div>
+                        )}
                       </div>
-                      {task.description && (
-                        <div className="text-sm text-text-muted mt-0.5">{task.description}</div>
-                      )}
                     </div>
 
-                    {/* Meta + assignees + actions */}
-                    <div className="flex items-center gap-4 shrink-0">
+                    {/* Bottom row on mobile / right side on desktop: meta + assignees + actions */}
+                    <div className="flex items-center gap-3 sm:gap-4 flex-wrap pl-8 sm:pl-0 shrink-0">
                       <PriorityBadge priority={task.priority} />
 
                       {task.due_date && (
@@ -316,8 +319,8 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
                         )}
                       </div>
 
-                      {/* Edit / Delete — appear on row hover */}
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Edit / Delete — always visible on mobile, hover-only on desktop */}
+                      <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => startEdit(task)}
                           className="p-2.5 rounded-md text-text-muted hover:text-brand hover:bg-brand-pale transition-colors"
@@ -370,7 +373,7 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
         <form
           ref={addFormRef}
           action={handleAdd}
-          className="px-8 py-5 border-t border-border bg-gray-50 space-y-3"
+          className="px-4 py-4 sm:px-8 sm:py-5 border-t border-border bg-gray-50 space-y-3"
         >
           <input type="hidden" name="deal_id" value={dealId} />
           <input type="hidden" name="deal_stage" value={stage} />
@@ -422,7 +425,7 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
           </div>
         </form>
       ) : (
-        <div className="px-8 py-4 border-t border-border">
+        <div className="px-4 py-3 sm:px-8 sm:py-4 border-t border-border">
           <button
             onClick={() => {
               setIsAdding(true);

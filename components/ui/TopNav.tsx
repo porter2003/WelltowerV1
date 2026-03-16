@@ -19,12 +19,17 @@ type Props = { currentUser: User | null };
 export function TopNav({ currentUser }: Props) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const mobileNavRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
+      }
+      if (mobileNavRef.current && !mobileNavRef.current.contains(e.target as Node)) {
+        setMobileNavOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -33,10 +38,10 @@ export function TopNav({ currentUser }: Props) {
 
   return (
     <header className="bg-white border-b border-border shadow-sm">
-      <div className="max-w-[1400px] mx-auto px-6 h-24 flex items-center justify-between">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-24 flex items-center justify-between">
 
         {/* Logo lockup */}
-        <Link href="/" className="flex items-center gap-5 shrink-0">
+        <Link href="/" className="flex items-center gap-3 sm:gap-5 shrink-0">
           <Image
             src="/brighton-logo.png"
             alt="Brighton"
@@ -57,8 +62,8 @@ export function TopNav({ currentUser }: Props) {
         </Link>
 
         <div className="flex items-center gap-2">
-          {/* Nav links */}
-          <nav className="flex items-center gap-1">
+          {/* Nav links — hidden on mobile, visible sm+ */}
+          <nav className="hidden sm:flex items-center gap-1">
             {navLinks.map(({ href, label }) => {
               const isActive =
                 href === '/' ? pathname === '/' : pathname.startsWith(href);
@@ -78,9 +83,22 @@ export function TopNav({ currentUser }: Props) {
             })}
           </nav>
 
+          {/* Mobile hamburger button — visible below sm */}
+          <div className="sm:hidden" ref={mobileNavRef}>
+            <button
+              onClick={() => setMobileNavOpen((o) => !o)}
+              className="p-2 rounded-lg text-text-muted hover:text-brand hover:bg-brand-pale transition-colors"
+              aria-label="Open navigation menu"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                <path fillRule="evenodd" d="M3 6.75A.75.75 0 0 1 3.75 6h16.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 6.75ZM3 12a.75.75 0 0 1 .75-.75h16.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 12Zm0 5.25a.75.75 0 0 1 .75-.75h16.5a.75.75 0 0 1 0 1.5H3.75a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+
           {/* Profile avatar + dropdown */}
           {currentUser && (
-            <div className="relative ml-3" ref={menuRef}>
+            <div className="relative ml-1 sm:ml-3" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen((o) => !o)}
                 className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold transition-opacity hover:opacity-85"
@@ -106,6 +124,30 @@ export function TopNav({ currentUser }: Props) {
           )}
         </div>
       </div>
+
+      {/* Mobile nav dropdown */}
+      {mobileNavOpen && (
+        <div className="sm:hidden border-t border-border bg-white px-4 py-3 space-y-1">
+          {navLinks.map(({ href, label }) => {
+            const isActive =
+              href === '/' ? pathname === '/' : pathname.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMobileNavOpen(false)}
+                className={`block px-4 py-3 rounded-lg text-base font-semibold tracking-wide transition-colors ${
+                  isActive
+                    ? 'bg-brand-pale text-brand'
+                    : 'text-text-muted hover:text-brand hover:bg-brand-pale'
+                }`}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </header>
   );
 }

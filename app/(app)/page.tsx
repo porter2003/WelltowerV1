@@ -40,14 +40,14 @@ export default async function DashboardPage() {
               href={`/deals/${deal.id}`}
               className="block bg-surface border border-border rounded-xl shadow-sm hover:shadow-md hover:border-brand-pale transition-all group"
             >
-              <div className="p-8">
+              <div className="p-4 sm:p-8">
                 {/* Card header */}
-                <div className="flex items-start justify-between mb-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
                   <div>
                     <h2 className="text-2xl font-extrabold text-brand group-hover:text-brand-mid transition-colors">
                       {deal.name}
                     </h2>
-                    <div className="flex items-center gap-3 mt-1.5 text-base text-text-muted">
+                    <div className="flex flex-wrap items-center gap-3 mt-1.5 text-base text-text-muted">
                       <span>{deal.city + ", " + deal.state}</span>
                       <span>·</span>
                       <span>{deal.unit_count} Units</span>
@@ -59,7 +59,7 @@ export default async function DashboardPage() {
                 </div>
 
                 {/* Stats row */}
-                <div className="grid grid-cols-4 gap-6 py-6 border-y border-border">
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6 py-6 border-y border-border">
                   <div>
                     <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.5px] mb-1">Start Date</div>
                     <div className="text-brand font-semibold text-base">
@@ -114,7 +114,7 @@ export default async function DashboardPage() {
               </div>
 
               {/* Card footer */}
-              <div className="px-8 py-4 border-t border-border bg-brand-pale/40 rounded-b-xl flex items-center justify-between">
+              <div className="px-4 py-3 sm:px-8 sm:py-4 border-t border-border bg-brand-pale/40 rounded-b-xl flex items-center justify-between">
                 <span className="text-sm text-text-muted">
                   {completedTasks} of {allTasks.length} tasks complete
                 </span>

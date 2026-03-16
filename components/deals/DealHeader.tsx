@@ -105,11 +105,11 @@ export function DealHeader({ deal, pct, isAdmin }: Props) {
   );
 
   return (
-    <div className="bg-surface border border-border rounded-xl p-8 mb-8 shadow-sm">
+    <div className="bg-surface border border-border rounded-xl p-4 sm:p-8 mb-8 shadow-sm">
       {isEditing ? (
         /* ── Edit mode ── */
         <div className="space-y-5">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {field('Project Name', input('name', { placeholder: 'Project name' }))}
             {field(
               'Stage',
@@ -125,13 +125,13 @@ export function DealHeader({ deal, pct, isAdmin }: Props) {
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {field('City', input('city', { placeholder: 'City' }))}
             {field('State', input('state', { placeholder: 'ID', maxLength: 2 }))}
             {field('County (optional)', input('county', { placeholder: 'e.g. Ada County' }))}
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {field('Unit Count', input('unit_count', { type: 'number', min: '1', placeholder: '150' }))}
             {field('Start Date', input('start_date', { type: 'date' }))}
             {field('Target Completion', input('target_completion_date', { type: 'date' }))}
@@ -224,10 +224,10 @@ export function DealHeader({ deal, pct, isAdmin }: Props) {
       ) : (
         /* ── View mode ── */
         <>
-          <div className="flex items-start justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h1 className="text-3xl font-extrabold text-brand">{deal.name}</h1>
-              <div className="flex items-center gap-4 mt-2 text-base text-text-muted">
+              <div className="flex flex-wrap items-center gap-4 mt-2 text-base text-text-muted">
                 <span>{deal.partner}</span>
                 <span>·</span>
                 <span>{deal.city + ', ' + deal.state}</span>
@@ -261,7 +261,7 @@ export function DealHeader({ deal, pct, isAdmin }: Props) {
             </div>
           </div>
 
-          <div className="mt-8 grid grid-cols-3 gap-8 pt-6 border-t border-border">
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-8 pt-6 border-t border-border">
             <div>
               <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.5px] mb-1.5">
                 Start Date
