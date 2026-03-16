@@ -65,25 +65,26 @@ export function TaskFiles({ taskId, isAdmin }: Props) {
   }
 
   async function handleOpen(filePath: string, fileName: string) {
+    // Open the tab immediately (synchronous, within the tap event) so iOS
+    // Safari's popup blocker doesn't block it after the async await below.
+    const newTab = window.open('', '_blank');
+    if (!newTab) return;
+
     const { data } = await supabase.storage
       .from('task-files')
       .createSignedUrl(filePath, 3600);
 
-    if (!data?.signedUrl) return;
+    if (!data?.signedUrl) {
+      newTab.close();
+      return;
+    }
 
     const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
     const officeTypes = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'];
 
-    if (officeTypes.includes(ext)) {
-      // Open Office files via Microsoft Online Viewer
-      window.open(
-        `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(data.signedUrl)}`,
-        '_blank'
-      );
-    } else {
-      // PDFs, images, etc. open natively in a new tab
-      window.open(data.signedUrl, '_blank');
-    }
+    newTab.location.href = officeTypes.includes(ext)
+      ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(data.signedUrl)}`
+      : data.signedUrl;
   }
 
   async function handleDelete(fileId: string, filePath: string) {
