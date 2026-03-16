@@ -212,6 +212,18 @@ export async function deleteTaskFile(fileId: string, filePath: string) {
 export async function deleteTask(taskId: string, dealId: string) {
   const supabase = await createClient();
 
+  // Remove any storage files before deleting the task
+  const { data: files } = await supabase
+    .from('task_files')
+    .select('file_path')
+    .eq('task_id', taskId);
+
+  if (files && files.length > 0) {
+    await supabase.storage
+      .from('task-files')
+      .remove(files.map((f) => f.file_path));
+  }
+
   const { error } = await supabase.from('tasks').delete().eq('id', taskId);
 
   if (error) throw new Error(error.message);
