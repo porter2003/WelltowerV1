@@ -21,9 +21,9 @@ export type Database = {
         Relationships: [];
       };
       tasks: {
-        Row:    { id: string; deal_id: string; title: string; description: string | null; deal_stage: DealStage; priority: 'low' | 'medium' | 'high'; start_date: string | null; due_date: string | null; doc_link: string | null; is_complete: boolean; completed_at: string | null; created_at: string };
-        Insert: { id?: string; deal_id: string; title: string; description?: string | null; deal_stage: DealStage; priority?: 'low' | 'medium' | 'high'; start_date?: string | null; due_date?: string | null; doc_link?: string | null; is_complete?: boolean; completed_at?: string | null };
-        Update: { title?: string; description?: string | null; deal_stage?: DealStage; priority?: 'low' | 'medium' | 'high'; start_date?: string | null; due_date?: string | null; doc_link?: string | null; is_complete?: boolean; completed_at?: string | null };
+        Row:    { id: string; deal_id: string; title: string; description: string | null; deal_stage: DealStage; priority: 'low' | 'medium' | 'high'; sort_order: number | null; start_date: string | null; due_date: string | null; doc_link: string | null; is_complete: boolean; completed_at: string | null; created_at: string };
+        Insert: { id?: string; deal_id: string; title: string; description?: string | null; deal_stage: DealStage; priority?: 'low' | 'medium' | 'high'; sort_order?: number | null; start_date?: string | null; due_date?: string | null; doc_link?: string | null; is_complete?: boolean; completed_at?: string | null };
+        Update: { title?: string; description?: string | null; deal_stage?: DealStage; priority?: 'low' | 'medium' | 'high'; sort_order?: number | null; start_date?: string | null; due_date?: string | null; doc_link?: string | null; is_complete?: boolean; completed_at?: string | null };
         Relationships: [];
       };
       task_files: {

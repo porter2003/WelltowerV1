@@ -1,6 +1,21 @@
 'use client';
 
 import { useState, useTransition, useRef } from 'react';
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { PriorityBadge } from '@/components/ui/Badge';
 import {
   createTask,
@@ -9,6 +24,7 @@ import {
   deleteTask,
   assignUserToTask,
   unassignUserFromTask,
+  reorderTasks,
 } from '@/app/(app)/deals/actions';
 import type { Task, DealStage, TaskPriority, User } from '@/lib/types';
 import { avatarColor } from '@/lib/avatar';
@@ -45,11 +61,61 @@ type Props = {
   tasks: Task[];
   dealId: string;
   isAdmin: boolean;
+  currentUserId: string | null;
   users: User[];
   assignmentsByTaskId: Record<string, User[]>;
 };
 
-export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignmentsByTaskId }: Props) {
+// Lightweight sortable wrapper — renders children with drag handle props via render prop
+type SortableItemProps = {
+  id: string;
+  disabled: boolean;
+  children: (opts: {
+    dragHandleProps: React.HTMLAttributes<HTMLElement>;
+    isDragging: boolean;
+    ref: (node: HTMLElement | null) => void;
+    style: React.CSSProperties;
+  }) => React.ReactNode;
+};
+
+function SortableItem({ id, disabled, children }: SortableItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+    disabled,
+  });
+  return (
+    <>
+      {children({
+        dragHandleProps: { ...attributes, ...listeners },
+        isDragging,
+        ref: setNodeRef,
+        style: { transform: CSS.Transform.toString(transform), transition },
+      })}
+    </>
+  );
+}
+
+export function TaskStageSection({
+  stage,
+  tasks,
+  dealId,
+  isAdmin,
+  currentUserId,
+  users,
+  assignmentsByTaskId,
+}: Props) {
+  // "My tasks first" — float current user's tasks to top on init, preserve relative order
+  const [sortedTasks, setSortedTasks] = useState<Task[]>(() => {
+    if (!currentUserId) return tasks;
+    const mine = tasks.filter((t) =>
+      assignmentsByTaskId[t.id]?.some((u) => u.id === currentUserId)
+    );
+    const others = tasks.filter(
+      (t) => !assignmentsByTaskId[t.id]?.some((u) => u.id === currentUserId)
+    );
+    return [...mine, ...others];
+  });
+
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({
@@ -67,7 +133,11 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
   const [isPending, startTransition] = useTransition();
   const addFormRef = useRef<HTMLFormElement>(null);
 
-  const completedCount = tasks.filter((t) => t.is_complete).length;
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  const completedCount = sortedTasks.filter((t) => t.is_complete).length;
 
   function startEdit(task: Task) {
     setEditingId(task.id);
@@ -106,6 +176,7 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
     startTransition(async () => {
       await deleteTask(taskId, dealId);
       setConfirmDeleteId(null);
+      setSortedTasks((prev) => prev.filter((t) => t.id !== taskId));
     });
   }
 
@@ -129,13 +200,25 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
     startTransition(() => unassignUserFromTask(taskId, userId, dealId));
   }
 
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = sortedTasks.findIndex((t) => t.id === active.id);
+    const newIndex = sortedTasks.findIndex((t) => t.id === over.id);
+    const newOrder = arrayMove(sortedTasks, oldIndex, newIndex);
+
+    setSortedTasks(newOrder);
+    startTransition(() => reorderTasks(newOrder.map((t) => t.id), dealId));
+  }
+
   return (
     <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
       {/* Stage header */}
       <div className="px-4 py-3 sm:px-8 sm:py-4 border-b border-border bg-brand-100 flex items-center justify-between">
         <h2 className="font-semibold text-brand text-[11px] uppercase tracking-[0.5px]">{stage}</h2>
         <span className="text-[11px] text-text-muted">
-          {completedCount}/{tasks.length} complete
+          {completedCount}/{sortedTasks.length} complete
         </span>
       </div>
 
@@ -177,294 +260,316 @@ export function TaskStageSection({ stage, tasks, dealId, isAdmin, users, assignm
       )}
 
       {/* Task list */}
-      {tasks.length > 0 && (
-        <ul className="divide-y divide-border">
-          {tasks.map((task) => {
-            const assignees = assignmentsByTaskId[task.id] ?? [];
-            const unassignedUsers = users.filter((u) => !assignees.some((a) => a.id === u.id));
+      {sortedTasks.length > 0 && (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={sortedTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+            <ul className="divide-y divide-border">
+              {sortedTasks.map((task) => {
+                const assignees = assignmentsByTaskId[task.id] ?? [];
 
-            return (
-              <li key={task.id} className="px-4 py-4 sm:px-8 sm:py-5">
-                {editingId === task.id ? (
-                  /* ── Edit mode ── */
-                  <div className="space-y-3">
-                    <input
-                      value={editForm.title}
-                      onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
-                      className="w-full border border-border rounded-lg px-3 py-2 text-sm text-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
-                      placeholder="Task title"
-                    />
-                    <input
-                      value={editForm.description}
-                      onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
-                      className="w-full border border-border rounded-lg px-3 py-2 text-sm text-text-muted focus:outline-none focus:ring-2 focus:ring-brand/30"
-                      placeholder="Description (optional)"
-                    />
-                    <input
-                      value={editForm.doc_link}
-                      onChange={(e) => setEditForm((f) => ({ ...f, doc_link: e.target.value }))}
-                      className="w-full border border-border rounded-lg px-3 py-2 text-sm text-text-muted focus:outline-none focus:ring-2 focus:ring-brand/30"
-                      placeholder="Document link — Google Drive, SharePoint, etc. (optional)"
-                    />
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <select
-                        value={editForm.priority}
-                        onChange={(e) =>
-                          setEditForm((f) => ({ ...f, priority: e.target.value as TaskPriority }))
-                        }
-                        className="border border-border rounded-lg px-3 py-2 text-sm text-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                return (
+                  <SortableItem key={task.id} id={task.id} disabled={!isAdmin}>
+                    {({ dragHandleProps, isDragging, ref, style }) => (
+                      <li
+                        ref={ref}
+                        style={{ ...style, opacity: isDragging ? 0.4 : 1 }}
+                        className="px-4 py-4 sm:px-8 sm:py-5 group"
                       >
-                        {PRIORITY_OPTIONS.map((p) => (
-                          <option key={p} value={p}>
-                            {p.charAt(0).toUpperCase() + p.slice(1)} Priority
-                          </option>
-                        ))}
-                      </select>
-                      <div className="flex items-center gap-1.5">
-                        <label className="text-xs text-text-muted shrink-0">Start</label>
-                        <input
-                          type="date"
-                          value={editForm.start_date}
-                          onChange={(e) => setEditForm((f) => ({ ...f, start_date: e.target.value }))}
-                          className="border border-border rounded-lg px-3 py-2 text-sm text-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
-                        />
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <label className="text-xs text-text-muted shrink-0">Due</label>
-                        <input
-                          type="date"
-                          value={editForm.due_date}
-                          onChange={(e) => setEditForm((f) => ({ ...f, due_date: e.target.value }))}
-                          className="border border-border rounded-lg px-3 py-2 text-sm text-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
-                        />
-                      </div>
-                      <div className="flex gap-2 ml-auto">
-                        <button
-                          onClick={() => handleSaveEdit(task.id)}
-                          disabled={isPending || !editForm.title.trim()}
-                          className="px-4 py-2 text-sm bg-brand text-white rounded-lg hover:bg-brand/90 disabled:opacity-50 transition-opacity"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="px-4 py-2 text-sm border border-border rounded-lg text-text-muted hover:bg-gray-50 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* ── View mode ── */
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-5 group">
-                    {/* Top row: checkbox + title/description */}
-                    <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
-                      {/* Complete toggle */}
-                      <button
-                        onClick={() => handleToggle(task)}
-                        disabled={isPending}
-                        className={`w-5 h-5 mt-0.5 sm:mt-0 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${
-                          task.is_complete
-                            ? 'border-brand bg-brand'
-                            : 'border-gray-300 hover:border-brand'
-                        }`}
-                      >
-                        {task.is_complete && (
-                          <svg viewBox="0 0 12 12" fill="none" className="w-3 h-3">
-                            <path
-                              d="M2 6l3 3 5-5"
-                              stroke="white"
-                              strokeWidth="1.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
+                        {editingId === task.id ? (
+                          /* ── Edit mode ── */
+                          <div className="space-y-3">
+                            <input
+                              value={editForm.title}
+                              onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+                              className="w-full border border-border rounded-lg px-3 py-2 text-sm text-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                              placeholder="Task title"
                             />
-                          </svg>
-                        )}
-                      </button>
-
-                      {/* Title + description */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`text-base font-semibold ${
-                              task.is_complete ? 'line-through text-text-muted' : 'text-brand'
-                            }`}
-                          >
-                            {task.title}
-                          </span>
-                          {task.doc_link && (
-                            <a
-                              href={task.doc_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium bg-brand-pale text-brand hover:bg-brand hover:text-white transition-colors shrink-0"
-                              title="Open linked document"
-                            >
-                              {getDocLinkLabel(task.doc_link)}
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="currentColor" className="w-2.5 h-2.5">
-                                <path d="M4.5 2.5a.5.5 0 0 0 0 1H7.29L2.15 8.65a.5.5 0 1 0 .7.7L8 4.21V7a.5.5 0 0 0 1 0V2.5H4.5Z" />
-                              </svg>
-                            </a>
-                          )}
-                        </div>
-                        {task.description && (
-                          <div className="text-sm text-text-muted mt-0.5">{task.description}</div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Bottom row on mobile / right side on desktop: meta + assignees + actions */}
-                    <div className="flex items-center gap-3 sm:gap-4 flex-wrap pl-8 sm:pl-0 shrink-0">
-                      <PriorityBadge priority={task.priority} />
-
-                      {task.start_date && (
-                        <span className="text-sm text-text-muted">
-                          Starts{' '}
-                          {new Date(task.start_date + 'T00:00:00').toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                          })}
-                        </span>
-                      )}
-                      {task.due_date && (
-                        <span className="text-sm text-text-muted">
-                          Due{' '}
-                          {new Date(task.due_date + 'T00:00:00').toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                          })}
-                        </span>
-                      )}
-
-                      {/* Assignee chips + assign button */}
-                      <div className="flex items-center gap-1">
-                        {assignees.map((user) => (
-                          <div key={user.id} className="relative group/avatar">
-                            <div
-                              className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-bold select-none"
-                              style={{ background: avatarColor(user.id) }}
-                              title={`${user.first_name} ${user.last_name}`}
-                            >
-                              {user.first_name[0]}{user.last_name[0]}
-                            </div>
-                            {isAdmin && (
-                              <button
-                                onClick={() => handleUnassign(task.id, user.id)}
-                                disabled={isPending}
-                                title={`Remove ${user.first_name}`}
-                                className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full hidden group-hover/avatar:flex items-center justify-center text-[10px] leading-none hover:bg-red-600 transition-colors"
+                            <input
+                              value={editForm.description}
+                              onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                              className="w-full border border-border rounded-lg px-3 py-2 text-sm text-text-muted focus:outline-none focus:ring-2 focus:ring-brand/30"
+                              placeholder="Description (optional)"
+                            />
+                            <input
+                              value={editForm.doc_link}
+                              onChange={(e) => setEditForm((f) => ({ ...f, doc_link: e.target.value }))}
+                              className="w-full border border-border rounded-lg px-3 py-2 text-sm text-text-muted focus:outline-none focus:ring-2 focus:ring-brand/30"
+                              placeholder="Document link — Google Drive, SharePoint, etc. (optional)"
+                            />
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <select
+                                value={editForm.priority}
+                                onChange={(e) =>
+                                  setEditForm((f) => ({ ...f, priority: e.target.value as TaskPriority }))
+                                }
+                                className="border border-border rounded-lg px-3 py-2 text-sm text-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
                               >
-                                ×
-                              </button>
-                            )}
-                          </div>
-                        ))}
-
-                        {/* + assign button (admin only) */}
-                        {isAdmin && (
-                          <button
-                            onClick={(e) => {
-                              if (assignDropdownId === task.id) {
-                                setAssignDropdownId(null);
-                                setDropdownPos(null);
-                              } else {
-                                const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
-                                setDropdownPos({
-                                  top: rect.bottom + 6,
-                                  right: window.innerWidth - rect.right,
-                                });
-                                setAssignDropdownId(task.id);
-                              }
-                            }}
-                            title="Assign user"
-                            className="w-7 h-7 rounded-full border-2 border-dashed border-gray-300 hover:border-brand flex items-center justify-center text-gray-400 hover:text-brand transition-colors"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
-                              <path d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z" />
-                            </svg>
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Files toggle */}
-                      <button
-                        onClick={() => setExpandedFilesId(expandedFilesId === task.id ? null : task.id)}
-                        className={`flex items-center gap-1 text-xs transition-colors ${
-                          expandedFilesId === task.id ? 'text-brand' : 'text-text-muted hover:text-brand'
-                        }`}
-                        title="Show files"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
-                          <path fillRule="evenodd" d="M4 2a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V6.621a1.5 1.5 0 0 0-.44-1.06L9.94 2.439A1.5 1.5 0 0 0 8.878 2H4Zm1 7.25a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1-.75-.75Zm.75-3.25a.75.75 0 0 0 0 1.5H8A.75.75 0 0 0 8 6H5.75Z" clipRule="evenodd" />
-                        </svg>
-                        Files
-                      </button>
-
-                      {/* Edit / Delete — always visible on mobile, hover-only on desktop */}
-                      <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => startEdit(task)}
-                          className="p-2.5 rounded-md text-text-muted hover:text-brand hover:bg-brand-pale transition-colors"
-                          title="Edit task"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-6 h-6">
-                            <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.774a2.75 2.75 0 0 0-.596.892l-.848 2.047a.75.75 0 0 0 .98.98l2.047-.848a2.75 2.75 0 0 0 .892-.596l4.261-4.263a1.75 1.75 0 0 0 0-2.474ZM3.75 14A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2H7a.75.75 0 0 1 0 1.5H3.75a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25V9a.75.75 0 0 1 1.5 0v3.25A1.75 1.75 0 0 1 12.25 14h-8.5Z" />
-                          </svg>
-                        </button>
-
-                        {confirmDeleteId === task.id ? (
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => handleDelete(task.id)}
-                              disabled={isPending}
-                              className="px-2 py-1 text-xs bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors"
-                            >
-                              Delete
-                            </button>
-                            <button
-                              onClick={() => setConfirmDeleteId(null)}
-                              className="px-2 py-1 text-xs border border-border rounded-md text-text-muted hover:bg-gray-50 transition-colors"
-                            >
-                              Cancel
-                            </button>
+                                {PRIORITY_OPTIONS.map((p) => (
+                                  <option key={p} value={p}>
+                                    {p.charAt(0).toUpperCase() + p.slice(1)} Priority
+                                  </option>
+                                ))}
+                              </select>
+                              <div className="flex items-center gap-1.5">
+                                <label className="text-xs text-text-muted shrink-0">Start</label>
+                                <input
+                                  type="date"
+                                  value={editForm.start_date}
+                                  onChange={(e) => setEditForm((f) => ({ ...f, start_date: e.target.value }))}
+                                  className="border border-border rounded-lg px-3 py-2 text-sm text-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                                />
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <label className="text-xs text-text-muted shrink-0">Due</label>
+                                <input
+                                  type="date"
+                                  value={editForm.due_date}
+                                  onChange={(e) => setEditForm((f) => ({ ...f, due_date: e.target.value }))}
+                                  className="border border-border rounded-lg px-3 py-2 text-sm text-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                                />
+                              </div>
+                              <div className="flex gap-2 ml-auto">
+                                <button
+                                  onClick={() => handleSaveEdit(task.id)}
+                                  disabled={isPending || !editForm.title.trim()}
+                                  className="px-4 py-2 text-sm bg-brand text-white rounded-lg hover:bg-brand/90 disabled:opacity-50 transition-opacity"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => setEditingId(null)}
+                                  className="px-4 py-2 text-sm border border-border rounded-lg text-text-muted hover:bg-gray-50 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         ) : (
-                          <button
-                            onClick={() => setConfirmDeleteId(task.id)}
-                            className="p-2.5 rounded-md text-text-muted hover:text-red-600 hover:bg-red-50 transition-colors"
-                            title="Delete task"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-6 h-6">
-                              <path fillRule="evenodd" d="M5 3.25V4H2.75a.75.75 0 0 0 0 1.5h.3l.815 8.15A1.5 1.5 0 0 0 5.357 15h5.285a1.5 1.5 0 0 0 1.493-1.35l.815-8.15h.3a.75.75 0 0 0 0-1.5H11v-.75A2.25 2.25 0 0 0 8.75 1h-1.5A2.25 2.25 0 0 0 5 3.25Zm2.25-.75a.75.75 0 0 0-.75.75V4h3v-.75a.75.75 0 0 0-.75-.75h-1.5ZM6.05 6a.75.75 0 0 1 .787.713l.275 5.5a.75.75 0 0 1-1.498.075l-.275-5.5A.75.75 0 0 1 6.05 6Zm3.9 0a.75.75 0 0 1 .712.787l-.275 5.5a.75.75 0 0 1-1.498-.075l.275-5.5a.75.75 0 0 1 .786-.711Z" clipRule="evenodd" />
-                            </svg>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
+                          /* ── View mode ── */
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-5">
+                            {/* Drag handle — admin only, fades in on hover */}
+                            {isAdmin && (
+                              <div
+                                {...dragHandleProps}
+                                className="hidden sm:flex cursor-grab active:cursor-grabbing p-1 text-gray-300 hover:text-gray-400 transition-colors touch-none shrink-0 opacity-0 group-hover:opacity-100"
+                                title="Drag to reorder"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 16" fill="currentColor" className="w-3 h-4">
+                                  <circle cx="3" cy="3" r="1.5" />
+                                  <circle cx="7" cy="3" r="1.5" />
+                                  <circle cx="3" cy="8" r="1.5" />
+                                  <circle cx="7" cy="8" r="1.5" />
+                                  <circle cx="3" cy="13" r="1.5" />
+                                  <circle cx="7" cy="13" r="1.5" />
+                                </svg>
+                              </div>
+                            )}
 
-                {/* Expandable file attachments */}
-                {expandedFilesId === task.id && editingId !== task.id && (
-                  <>
-                    <TaskFiles taskId={task.id} isAdmin={isAdmin} />
-                    <button
-                      onClick={() => setExpandedFilesId(null)}
-                      className="mt-1 ml-8 flex items-center gap-1 text-xs text-text-muted hover:text-brand transition-colors"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
-                        <path fillRule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" clipRule="evenodd" />
-                      </svg>
-                      Hide files
-                    </button>
-                  </>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                            {/* Top row: checkbox + title/description */}
+                            <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+                              {/* Complete toggle */}
+                              <button
+                                onClick={() => handleToggle(task)}
+                                disabled={isPending}
+                                className={`w-5 h-5 mt-0.5 sm:mt-0 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${
+                                  task.is_complete
+                                    ? 'border-brand bg-brand'
+                                    : 'border-gray-300 hover:border-brand'
+                                }`}
+                              >
+                                {task.is_complete && (
+                                  <svg viewBox="0 0 12 12" fill="none" className="w-3 h-3">
+                                    <path
+                                      d="M2 6l3 3 5-5"
+                                      stroke="white"
+                                      strokeWidth="1.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                )}
+                              </button>
+
+                              {/* Title + description */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={`text-base font-semibold ${
+                                      task.is_complete ? 'line-through text-text-muted' : 'text-brand'
+                                    }`}
+                                  >
+                                    {task.title}
+                                  </span>
+                                  {task.doc_link && (
+                                    <a
+                                      href={task.doc_link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium bg-brand-pale text-brand hover:bg-brand hover:text-white transition-colors shrink-0"
+                                      title="Open linked document"
+                                    >
+                                      {getDocLinkLabel(task.doc_link)}
+                                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="currentColor" className="w-2.5 h-2.5">
+                                        <path d="M4.5 2.5a.5.5 0 0 0 0 1H7.29L2.15 8.65a.5.5 0 1 0 .7.7L8 4.21V7a.5.5 0 0 0 1 0V2.5H4.5Z" />
+                                      </svg>
+                                    </a>
+                                  )}
+                                </div>
+                                {task.description && (
+                                  <div className="text-sm text-text-muted mt-0.5">{task.description}</div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Bottom row on mobile / right side on desktop: meta + assignees + actions */}
+                            <div className="flex items-center gap-3 sm:gap-4 flex-wrap pl-8 sm:pl-0 shrink-0">
+                              <PriorityBadge priority={task.priority} />
+
+                              {task.start_date && (
+                                <span className="text-sm text-text-muted">
+                                  Starts{' '}
+                                  {new Date(task.start_date + 'T00:00:00').toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                  })}
+                                </span>
+                              )}
+                              {task.due_date && (
+                                <span className="text-sm text-text-muted">
+                                  Due{' '}
+                                  {new Date(task.due_date + 'T00:00:00').toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                  })}
+                                </span>
+                              )}
+
+                              {/* Assignee chips + assign button */}
+                              <div className="flex items-center gap-1">
+                                {assignees.map((user) => (
+                                  <div key={user.id} className="relative group/avatar">
+                                    <div
+                                      className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-bold select-none"
+                                      style={{ background: avatarColor(user.id) }}
+                                      title={`${user.first_name} ${user.last_name}`}
+                                    >
+                                      {user.first_name[0]}{user.last_name[0]}
+                                    </div>
+                                    {isAdmin && (
+                                      <button
+                                        onClick={() => handleUnassign(task.id, user.id)}
+                                        disabled={isPending}
+                                        title={`Remove ${user.first_name}`}
+                                        className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full hidden group-hover/avatar:flex items-center justify-center text-[10px] leading-none hover:bg-red-600 transition-colors"
+                                      >
+                                        ×
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+
+                                {/* + assign button (admin only) */}
+                                {isAdmin && (
+                                  <button
+                                    onClick={(e) => {
+                                      if (assignDropdownId === task.id) {
+                                        setAssignDropdownId(null);
+                                        setDropdownPos(null);
+                                      } else {
+                                        const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                                        setDropdownPos({
+                                          top: rect.bottom + 6,
+                                          right: window.innerWidth - rect.right,
+                                        });
+                                        setAssignDropdownId(task.id);
+                                      }
+                                    }}
+                                    title="Assign user"
+                                    className="w-7 h-7 rounded-full border-2 border-dashed border-gray-300 hover:border-brand flex items-center justify-center text-gray-400 hover:text-brand transition-colors"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+                                      <path d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z" />
+                                    </svg>
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Files toggle */}
+                              <button
+                                onClick={() => setExpandedFilesId(expandedFilesId === task.id ? null : task.id)}
+                                className={`flex items-center gap-1 text-xs transition-colors ${
+                                  expandedFilesId === task.id ? 'text-brand' : 'text-text-muted hover:text-brand'
+                                }`}
+                                title="Show files"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+                                  <path fillRule="evenodd" d="M4 2a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V6.621a1.5 1.5 0 0 0-.44-1.06L9.94 2.439A1.5 1.5 0 0 0 8.878 2H4Zm1 7.25a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1-.75-.75Zm.75-3.25a.75.75 0 0 0 0 1.5H8A.75.75 0 0 0 8 6H5.75Z" clipRule="evenodd" />
+                                </svg>
+                                Files
+                              </button>
+
+                              {/* Edit / Delete — always visible on mobile, hover-only on desktop */}
+                              <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => startEdit(task)}
+                                  className="p-2.5 rounded-md text-text-muted hover:text-brand hover:bg-brand-pale transition-colors"
+                                  title="Edit task"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-6 h-6">
+                                    <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.774a2.75 2.75 0 0 0-.596.892l-.848 2.047a.75.75 0 0 0 .98.98l2.047-.848a2.75 2.75 0 0 0 .892-.596l4.261-4.263a1.75 1.75 0 0 0 0-2.474ZM3.75 14A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2H7a.75.75 0 0 1 0 1.5H3.75a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25V9a.75.75 0 0 1 1.5 0v3.25A1.75 1.75 0 0 1 12.25 14h-8.5Z" />
+                                  </svg>
+                                </button>
+
+                                {confirmDeleteId === task.id ? (
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => handleDelete(task.id)}
+                                      disabled={isPending}
+                                      className="px-2 py-1 text-xs bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors"
+                                    >
+                                      Delete
+                                    </button>
+                                    <button
+                                      onClick={() => setConfirmDeleteId(null)}
+                                      className="px-2 py-1 text-xs border border-border rounded-md text-text-muted hover:bg-gray-50 transition-colors"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setConfirmDeleteId(task.id)}
+                                    className="p-2.5 rounded-md text-text-muted hover:text-red-600 hover:bg-red-50 transition-colors"
+                                    title="Delete task"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-6 h-6">
+                                      <path fillRule="evenodd" d="M5 3.25V4H2.75a.75.75 0 0 0 0 1.5h.3l.815 8.15A1.5 1.5 0 0 0 5.357 15h5.285a1.5 1.5 0 0 0 1.493-1.35l.815-8.15h.3a.75.75 0 0 0 0-1.5H11v-.75A2.25 2.25 0 0 0 8.75 1h-1.5A2.25 2.25 0 0 0 5 3.25Zm2.25-.75a.75.75 0 0 0-.75.75V4h3v-.75a.75.75 0 0 0-.75-.75h-1.5ZM6.05 6a.75.75 0 0 1 .787.713l.275 5.5a.75.75 0 0 1-1.498.075l-.275-5.5A.75.75 0 0 1 6.05 6Zm3.9 0a.75.75 0 0 1 .712.787l-.275 5.5a.75.75 0 0 1-1.498-.075l.275-5.5a.75.75 0 0 1 .786-.711Z" clipRule="evenodd" />
+                                    </svg>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Expandable file attachments */}
+                        {expandedFilesId === task.id && editingId !== task.id && (
+                          <TaskFiles
+                            taskId={task.id}
+                            isAdmin={isAdmin}
+                            onHide={() => setExpandedFilesId(null)}
+                          />
+                        )}
+                      </li>
+                    )}
+                  </SortableItem>
+                );
+              })}
+            </ul>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Add task inline form / button */}

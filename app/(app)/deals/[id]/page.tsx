@@ -27,7 +27,7 @@ export default async function DealDetailPage({ params }: Props) {
       .from('tasks')
       .select('*')
       .eq('deal_id', id)
-      .order('is_complete', { ascending: false })
+      .order('sort_order', { ascending: true, nullsFirst: false })
       .order('start_date', { ascending: true, nullsFirst: false })
       .order('due_date', { ascending: true, nullsFirst: false })
       .order('created_at'),
@@ -104,6 +104,7 @@ export default async function DealDetailPage({ params }: Props) {
             tasks={tasksByStage[stage]}
             dealId={id}
             isAdmin={isAdmin}
+            currentUserId={authUser?.id ?? null}
             users={users}
             assignmentsByTaskId={assignmentsByTaskId}
           />

@@ -33,6 +33,7 @@ export type Task = {
   description?: string;
   deal_stage: DealStage;
   priority: TaskPriority;
+  sort_order?: number | null;
   start_date?: string;
   due_date?: string;
   doc_link?: string;

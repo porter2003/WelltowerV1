@@ -256,3 +256,15 @@ export async function unassignUserFromTask(taskId: string, userId: string, dealI
 
   revalidatePath(`/deals/${dealId}`);
 }
+
+export async function reorderTasks(orderedIds: string[], dealId: string): Promise<void> {
+  const supabase = await createClient();
+
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      supabase.from('tasks').update({ sort_order: index }).eq('id', id)
+    )
+  );
+
+  revalidatePath(`/deals/${dealId}`);
+}

@@ -12,6 +12,7 @@ type TaskFileWithUploader = TaskFile & {
 type Props = {
   taskId: string;
   isAdmin: boolean;
+  onHide: () => void;
 };
 
 function formatBytes(bytes: number | null): string {
@@ -21,7 +22,7 @@ function formatBytes(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function TaskFiles({ taskId, isAdmin }: Props) {
+export function TaskFiles({ taskId, isAdmin, onHide }: Props) {
   const [supabase] = useState(() => createClient());
   const [files, setFiles] = useState<TaskFileWithUploader[]>([]);
   const [loading, setLoading] = useState(true);
@@ -169,18 +170,29 @@ export function TaskFiles({ taskId, isAdmin }: Props) {
         <p className="text-xs text-text-muted py-1 mb-2">No files attached yet.</p>
       )}
 
-      {/* Upload button */}
-      <input ref={fileInputRef} type="file" className="hidden" onChange={handleUpload} />
-      <button
-        onClick={() => fileInputRef.current?.click()}
-        disabled={uploading}
-        className="flex items-center gap-1.5 text-xs text-brand hover:text-brand/80 disabled:opacity-50 transition-opacity"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
-          <path fillRule="evenodd" d="M4 2a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V6.621a1.5 1.5 0 0 0-.44-1.06L9.94 2.439A1.5 1.5 0 0 0 8.878 2H4Zm4.78 4.22a.75.75 0 0 0-1.06 0L5.97 7.97a.75.75 0 1 0 1.06 1.06l.72-.72v2.69a.75.75 0 0 0 1.5 0V8.31l.72.72a.75.75 0 1 0 1.06-1.06L8.78 6.22Z" clipRule="evenodd" />
-        </svg>
-        {uploading ? 'Uploading…' : 'Attach file'}
-      </button>
+      {/* Bottom row: upload + hide */}
+      <div className="flex items-center gap-4">
+        <input ref={fileInputRef} type="file" className="hidden" onChange={handleUpload} />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="flex items-center gap-1.5 text-xs text-brand hover:text-brand/80 disabled:opacity-50 transition-opacity"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+            <path fillRule="evenodd" d="M4 2a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V6.621a1.5 1.5 0 0 0-.44-1.06L9.94 2.439A1.5 1.5 0 0 0 8.878 2H4Zm4.78 4.22a.75.75 0 0 0-1.06 0L5.97 7.97a.75.75 0 1 0 1.06 1.06l.72-.72v2.69a.75.75 0 0 0 1.5 0V8.31l.72.72a.75.75 0 1 0 1.06-1.06L8.78 6.22Z" clipRule="evenodd" />
+          </svg>
+          {uploading ? 'Uploading…' : 'Attach file'}
+        </button>
+        <button
+          onClick={onHide}
+          className="flex items-center gap-1 text-xs text-text-muted hover:text-brand transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+            <path fillRule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" clipRule="evenodd" />
+          </svg>
+          Hide
+        </button>
+      </div>
     </div>
   );
 }
