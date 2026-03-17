@@ -261,7 +261,7 @@ export function TaskStageSection({
 
       {/* Task list */}
       {sortedTasks.length > 0 && (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext id={`dnd-${stage}`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={sortedTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
             <ul className="divide-y divide-border">
               {sortedTasks.map((task) => {
