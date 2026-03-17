@@ -13,7 +13,7 @@ export async function inviteUser(formData: FormData): Promise<{ error: string } 
   const role = formData.get('role') as UserRole;
 
   const { data: authData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: 'https://welltower-v1.vercel.app/auth/confirm',
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://welltower-v1.vercel.app'}/auth/confirm`,
     data: { first_name, last_name, role },
   });
 
@@ -52,7 +52,7 @@ export async function approveRequest(requestId: string, formData: FormData): Pro
   const role = formData.get('role') as UserRole;
 
   const { data: authData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: 'https://welltower-v1.vercel.app/auth/confirm',
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://welltower-v1.vercel.app'}/auth/confirm`,
     data: { first_name, last_name, role },
   });
 
