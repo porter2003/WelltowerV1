@@ -155,10 +155,30 @@ export function TaskStageSection({
   }
 
   function handleToggle(task: Task) {
+    setSortedTasks((prev) =>
+      prev.map((t) =>
+        t.id === task.id ? { ...t, is_complete: !t.is_complete } : t
+      )
+    );
     startTransition(() => toggleTask(task.id, dealId, task.is_complete));
   }
 
   function handleSaveEdit(taskId: string) {
+    setSortedTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId
+          ? {
+              ...t,
+              title: editForm.title,
+              description: editForm.description,
+              priority: editForm.priority as TaskPriority,
+              start_date: editForm.start_date || undefined,
+              due_date: editForm.due_date || undefined,
+              doc_link: editForm.doc_link || undefined,
+            }
+          : t
+      )
+    );
     startTransition(async () => {
       await updateTask(taskId, dealId, {
         title: editForm.title,
