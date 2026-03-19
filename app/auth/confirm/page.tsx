@@ -40,6 +40,15 @@ function ConfirmInner() {
         if (!error) { router.replace('/auth/set-password'); return; }
       }
 
+      if (hash.includes('access_token')) {
+        const hashParams = new URLSearchParams(hash.slice(1));
+        const access_token = hashParams.get('access_token') ?? '';
+        const refresh_token = hashParams.get('refresh_token') ?? '';
+        const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+        log('Hash setSession', error ? `❌ ${error.message}` : '✓ success', !error);
+        if (!error) { router.replace('/auth/set-password'); return; }
+      }
+
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       log('getSession', session ? `✓ user=${session.user.email}` : `❌ no session${sessionError ? ' — ' + sessionError.message : ''}`, !!session);
       if (session) { router.replace('/auth/set-password'); return; }
