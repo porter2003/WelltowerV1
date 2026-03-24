@@ -22,15 +22,21 @@ type Props = {
 export function UsersPageClient({ users, isAdmin, currentUserId, accessRequests }: Props) {
   const [showInvite, setShowInvite] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [approveRoles, setApproveRoles] = useState<Record<string, UserRole>>({});
   const [approveErrors, setApproveErrors] = useState<Record<string, string>>({});
   const [isPending, startTransition] = useTransition();
 
   function handleDelete(userId: string) {
+    setDeleteError(null);
     startTransition(async () => {
-      await deleteUser(userId);
-      setConfirmDeleteId(null);
+      const result = await deleteUser(userId);
+      if (result?.error) {
+        setDeleteError(result.error);
+      } else {
+        setConfirmDeleteId(null);
+      }
     });
   }
 
@@ -116,21 +122,26 @@ export function UsersPageClient({ users, isAdmin, currentUserId, accessRequests 
                     <td className="px-6 py-4 text-right w-48">
                       {!isSelf && (
                         confirmDeleteId === user.id ? (
-                          <div className="flex items-center justify-end gap-2">
-                            <span className="text-xs text-text-muted">Remove user?</span>
-                            <button
-                              onClick={() => handleDelete(user.id)}
-                              disabled={isPending}
-                              className="px-2.5 py-1 text-xs bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors"
-                            >
-                              Remove
-                            </button>
-                            <button
-                              onClick={() => setConfirmDeleteId(null)}
-                              className="px-2.5 py-1 text-xs border border-border rounded-md text-text-muted hover:bg-gray-50 transition-colors"
-                            >
-                              Cancel
-                            </button>
+                          <div className="flex flex-col items-end gap-1">
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="text-xs text-text-muted">Remove user?</span>
+                              <button
+                                onClick={() => handleDelete(user.id)}
+                                disabled={isPending}
+                                className="px-2.5 py-1 text-xs bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors"
+                              >
+                                {isPending ? 'Removing…' : 'Remove'}
+                              </button>
+                              <button
+                                onClick={() => { setConfirmDeleteId(null); setDeleteError(null); }}
+                                className="px-2.5 py-1 text-xs border border-border rounded-md text-text-muted hover:bg-gray-50 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                            {deleteError && (
+                              <p className="text-xs text-red-600">{deleteError}</p>
+                            )}
                           </div>
                         ) : (
                           <button

@@ -95,11 +95,10 @@ export async function dismissRequest(requestId: string) {
   revalidatePath('/admin/users');
 }
 
-export async function deleteUser(targetUserId: string) {
-  // Verify the caller is an admin
+export async function deleteUser(targetUserId: string): Promise<{ error: string } | void> {
   const supabase = await createClient();
   const { data: { user: authUser } } = await supabase.auth.getUser();
-  if (!authUser) throw new Error('Not authenticated');
+  if (!authUser) return { error: 'Not authenticated' };
 
   const { data: callerProfile } = await supabase
     .from('profiles')
@@ -107,14 +106,19 @@ export async function deleteUser(targetUserId: string) {
     .eq('id', authUser.id)
     .single();
 
-  if (callerProfile?.role !== 'admin') throw new Error('Unauthorized');
+  if (callerProfile?.role !== 'admin') return { error: 'Unauthorized' };
 
-  // Prevent self-deletion
-  if (targetUserId === authUser.id) throw new Error('Cannot delete your own account');
+  if (targetUserId === authUser.id) return { error: 'Cannot delete your own account' };
 
-  // Deleting from auth.users cascades to profiles via FK
+  // Null out uploaded_by on any files this user uploaded before deleting,
+  // in case the task_files FK doesn't have ON DELETE SET NULL
+  await supabaseAdmin
+    .from('task_files')
+    .update({ uploaded_by: null })
+    .eq('uploaded_by', targetUserId);
+
   const { error } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
 
   revalidatePath('/admin/users');
 }
