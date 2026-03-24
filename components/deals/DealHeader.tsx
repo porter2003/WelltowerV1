@@ -238,6 +238,7 @@ export function DealHeader({ deal, pct, isAdmin }: Props) {
             </div>
             <div className="flex items-center gap-3">
               <StageBadge stage={deal.stage} />
+              {isAdmin && (
               <button
                 onClick={() => setIsEditing(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-border rounded-lg text-text-muted hover:text-brand hover:border-brand hover:bg-brand-pale transition-colors"
@@ -246,7 +247,7 @@ export function DealHeader({ deal, pct, isAdmin }: Props) {
                   <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.774a2.75 2.75 0 0 0-.596.892l-.848 2.047a.75.75 0 0 0 .98.98l2.047-.848a2.75 2.75 0 0 0 .892-.596l4.261-4.263a1.75 1.75 0 0 0 0-2.474ZM3.75 14A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2H7a.75.75 0 0 1 0 1.5H3.75a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25V9a.75.75 0 0 1 1.5 0v3.25A1.75 1.75 0 0 1 12.25 14h-8.5Z" />
                 </svg>
                 Edit
-              </button>
+              </button>)}
               {isAdmin && (
                 <button
                   onClick={() => setDeleteStep(1)}
