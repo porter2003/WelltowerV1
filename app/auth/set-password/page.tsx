@@ -18,6 +18,9 @@ export default function SetPasswordPage() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) {
         router.replace('/login');
+      } else if (user.user_metadata?.password_set !== false) {
+        // Already set up — don't show this page to existing users
+        router.replace('/');
       } else {
         setSessionChecked(true);
       }
@@ -39,7 +42,10 @@ export default function SetPasswordPage() {
 
     setLoading(true);
     const supabase = createClient();
-    const { error: updateError } = await supabase.auth.updateUser({ password });
+    const { error: updateError } = await supabase.auth.updateUser({
+      password,
+      data: { password_set: true },
+    });
 
     if (updateError) {
       setError(updateError.message);

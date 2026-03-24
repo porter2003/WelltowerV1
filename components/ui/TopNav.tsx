@@ -22,13 +22,16 @@ export function TopNav({ currentUser }: Props) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const mobileNavRef = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
-      if (mobileNavRef.current && !mobileNavRef.current.contains(e.target as Node)) {
+      const inHamburger = mobileNavRef.current?.contains(e.target as Node);
+      const inDropdown = mobileDropdownRef.current?.contains(e.target as Node);
+      if (!inHamburger && !inDropdown) {
         setMobileNavOpen(false);
       }
     }
@@ -127,7 +130,7 @@ export function TopNav({ currentUser }: Props) {
 
       {/* Mobile nav dropdown */}
       {mobileNavOpen && (
-        <div className="sm:hidden border-t border-border bg-white px-4 py-3 space-y-1">
+        <div ref={mobileDropdownRef} className="sm:hidden border-t border-border bg-white px-4 py-3 space-y-1">
           {navLinks.map(({ href, label }) => {
             const isActive =
               href === '/' ? pathname === '/' : pathname.startsWith(href);

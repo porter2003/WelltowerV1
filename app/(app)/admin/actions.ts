@@ -14,19 +14,20 @@ export async function inviteUser(formData: FormData): Promise<{ error: string } 
 
   const { data: authData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://welltower-v1.vercel.app'}/auth/confirm`,
-    data: { first_name, last_name, role },
+    data: { first_name, last_name, role, password_set: false },
   });
 
   if (inviteError) return { error: inviteError.message };
 
-  const { error: profileError } = await supabaseAdmin.from('profiles').insert({
+  // Upsert handles re-inviting a user whose previous invite wasn't completed
+  const { error: profileError } = await supabaseAdmin.from('profiles').upsert({
     id: authData.user.id,
     first_name,
     last_name,
     email,
     role,
     is_active: true,
-  });
+  }, { onConflict: 'id' });
 
   if (profileError) return { error: profileError.message };
 
@@ -53,19 +54,20 @@ export async function approveRequest(requestId: string, formData: FormData): Pro
 
   const { data: authData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://welltower-v1.vercel.app'}/auth/confirm`,
-    data: { first_name, last_name, role },
+    data: { first_name, last_name, role, password_set: false },
   });
 
   if (inviteError) return { error: inviteError.message };
 
-  const { error: profileError } = await supabaseAdmin.from('profiles').insert({
+  // Upsert handles re-inviting a user whose previous invite wasn't completed
+  const { error: profileError } = await supabaseAdmin.from('profiles').upsert({
     id: authData.user.id,
     first_name,
     last_name,
     email,
     role,
     is_active: true,
-  });
+  }, { onConflict: 'id' });
 
   if (profileError) return { error: profileError.message };
 

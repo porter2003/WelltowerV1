@@ -10,5 +10,6 @@ export async function GET(request: Request) {
     await supabase.auth.exchangeCodeForSession(code);
   }
 
-  return NextResponse.redirect(`${origin}/`);
+  // Always route through set-password — it will redirect to / if password is already set
+  return NextResponse.redirect(`${origin}/auth/set-password`);
 }

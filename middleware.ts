@@ -28,6 +28,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isLoginPage = pathname === '/login';
   const isAuthPage = pathname.startsWith('/auth/');
+  const needsPassword = user?.user_metadata?.password_set === false;
 
   if (!user && !isLoginPage && !isAuthPage) {
     const url = request.nextUrl.clone();
@@ -35,9 +36,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Authenticated but hasn't set a password yet — keep them on set-password
+  if (user && needsPassword && !isAuthPage) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/auth/set-password';
+    return NextResponse.redirect(url);
+  }
+
   if (user && isLoginPage) {
     const url = request.nextUrl.clone();
-    url.pathname = '/';
+    url.pathname = needsPassword ? '/auth/set-password' : '/';
     return NextResponse.redirect(url);
   }
 

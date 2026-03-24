@@ -10,11 +10,16 @@ const labelClass = 'block text-[12px] font-semibold text-brand mb-1';
 
 export function InviteUserForm({ onCancel }: { onCancel: () => void }) {
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setError(null);
+    setLoading(true);
     const result = await inviteUser(formData);
-    if (result?.error) setError(result.error);
+    if (result?.error) {
+      setError(result.error);
+      setLoading(false);
+    }
   }
 
   return (
@@ -50,18 +55,21 @@ export function InviteUserForm({ onCancel }: { onCancel: () => void }) {
       <div className="flex items-center gap-4 mt-5">
         <button
           type="submit"
-          className="text-sm font-semibold px-4 py-2 rounded-lg text-white transition-opacity hover:opacity-90"
+          disabled={loading}
+          className="text-sm font-semibold px-4 py-2 rounded-lg text-white transition-opacity hover:opacity-90 disabled:opacity-60"
           style={{ background: '#003D79' }}
         >
-          Send Invite
+          {loading ? 'Sending…' : 'Send Invite'}
         </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-sm text-text-muted hover:text-brand transition-colors"
-        >
-          Cancel
-        </button>
+        {!loading && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-sm text-text-muted hover:text-brand transition-colors"
+          >
+            Cancel
+          </button>
+        )}
       </div>
     </form>
   );

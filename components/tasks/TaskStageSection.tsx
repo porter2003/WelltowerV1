@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useRef } from 'react';
+import { useState, useTransition, useRef, useEffect } from 'react';
 import {
   DndContext,
   DragEndEvent,
@@ -115,6 +115,11 @@ export function TaskStageSection({
     );
     return [...mine, ...others];
   });
+
+  // Sync local list when the server re-fetches after any mutation
+  useEffect(() => {
+    setSortedTasks(tasks);
+  }, [tasks]);
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);

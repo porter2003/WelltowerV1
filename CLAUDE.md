@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Brighton — Welltower Partnership Management Tool
 
 ## Project Overview
@@ -8,27 +12,24 @@ Internal use only. 5–10 Brighton staff users. No external access at launch.
 
 ---
 
-## Current Phase: Local Development Only
+## Current Phase: Phase 2 (Auth + Database Active)
 
-**This phase covers UI scaffolding and layout only. Do not wire up real data, authentication, or external services yet.**
+Supabase auth and database are fully integrated. The app uses real data, cookie-based sessions, and server actions for all mutations.
 
-- Use mock/hardcoded data in place of database calls
-- Do not integrate Supabase (auth or database) in this phase
-- Do not configure Vercel deployment in this phase
-- Design components and data flows to be backend-ready — use realistic data shapes that match the planned schema (see Data Model below)
-- All pages should be navigable locally via `npm run dev`
-
-Future phases will add: Supabase (auth + DB + realtime), Vercel deployment, and role-based access control.
+- Mock data in `lib/mock-data.ts` is retained but not used in production routes
+- All pages are protected by `middleware.ts` — unauthenticated users are redirected to `/login`
+- Phase 3 work (file attachments via Supabase Storage, comments, notifications) is not yet started
 
 ---
 
 ## Tech Stack
 
-- **Framework:** Next.js (App Router)
-- **Language:** TypeScript — strict mode, no `any` types
-- **Styling:** Tailwind CSS utility classes only — no custom CSS files
-- **Database (Phase 2):** Supabase (Postgres + Auth + Realtime)
-- **Hosting (Phase 2):** Vercel
+- **Framework:** Next.js 16 (App Router, server components, server actions)
+- **Language:** TypeScript 5 — strict mode, no `any` types
+- **Styling:** Tailwind CSS v4 (`@theme` custom properties in `globals.css`) — no custom CSS files
+- **Database/Auth:** Supabase (Postgres + Auth + `@supabase/ssr` for cookie sessions)
+- **Drag & Drop:** `@dnd-kit` (core, sortable, utilities)
+- **Hosting (Phase 3):** Vercel
 - **Version Control:** GitHub
 
 ---
@@ -46,114 +47,214 @@ npm run typecheck # TypeScript type check (tsc --noEmit)
 
 ## Application Structure
 
-### Core Screens (MVP)
+### Routes
 
 | Route | Description |
 |---|---|
-| `/` | Dashboard — all active Welltower deals with status, unit count, key dates |
-| `/deals/[id]` | Deal detail — tasks organized by stage, assignees, completion status |
-| `/deals/new` | Add a new deal |
-| `/admin/users` | Admin screen — manage team members and roles |
-| `/login` | Login screen (Phase 2 — stub for now) |
+| `/` | Dashboard — all active deals with status, unit count, key dates, task progress |
+| `/deals/[id]` | Deal detail — tasks organized by stage with drag-drop, assignments, file attachments |
+| `/deals/new` | Create a new deal (auto-creates tasks from templates) |
+| `/admin/users` | Team management — invite users, approve access requests, manage roles |
+| `/admin/default-tasks` | Manage task templates applied to new deals |
+| `/profile` | Edit current user's profile |
+| `/login` | Login / request access |
+| `/auth/confirm` | Invite link verification (handles code, token hash, and hash-fragment flows) |
+| `/auth/set-password` | Password setup after invite |
+| `/auth/callback` | Supabase OAuth callback |
+
+### Route Group: `(app)`
+
+Protected routes live under `app/(app)/`. The layout at `app/(app)/layout.tsx` fetches the current user/profile from Supabase and renders `<TopNav />`. The middleware enforces auth before any of these routes are reached.
 
 ### Deal Stages (task organization within each deal)
-- Due Diligence
-- Entitlements
-- Construction
-- Closeout
-
-*(Exact stages to be confirmed — use these as defaults for now.)*
+`Due Diligence` → `Entitlements` → `Construction` → `Closeout`
 
 ---
 
 ## Data Model
 
-Use these shapes for mock data. They will map directly to the Supabase schema in Phase 2.
+Defined in `lib/types.ts`. Maps directly to the Supabase schema in `supabase/schema.sql`.
 
 ```ts
+type UserRole = 'admin' | 'member' | 'partner';
+
 type User = {
   id: string;
-  name: string;
+  first_name: string;
+  last_name: string;
   email: string;
-  role: 'admin' | 'member' | 'partner'; // 'partner' reserved for Phase 2
+  role: UserRole;
   is_active: boolean;
 };
+
+type DealStage = 'Due Diligence' | 'Entitlements' | 'Construction' | 'Closeout';
 
 type Deal = {
   id: string;
   name: string;
-  partner: string; // e.g. "Welltower" — stored for future multi-partner support
-  location: string;
+  partner: string;
+  city: string;
+  state: string;
+  county?: string;
   unit_count: number;
-  stage: 'Due Diligence' | 'Entitlements' | 'Construction' | 'Closeout';
-  start_date: string; // ISO date
+  stage: DealStage;
+  start_date: string;       // ISO date
   target_completion_date: string; // ISO date
 };
+
+type TaskPriority = 'low' | 'medium' | 'high';
 
 type Task = {
   id: string;
   deal_id: string;
   title: string;
   description?: string;
-  deal_stage: Deal['stage'];
-  priority: 'low' | 'medium' | 'high';
-  due_date?: string; // ISO date
+  deal_stage: DealStage;
+  priority: TaskPriority;
+  sort_order?: number;
+  start_date?: string;
+  due_date?: string;
+  doc_link?: string;
   is_complete: boolean;
-  completed_at?: string; // ISO timestamp
+  completed_at?: string;
   created_at: string;
 };
 
-type TaskAssignment = {
+type TaskFile = {
+  id: string;
   task_id: string;
-  user_id: string;
+  file_name: string;
+  file_path: string;
+  file_size?: number;
+  mime_type?: string;
+  uploaded_by?: string;
+  uploaded_at: string;
 };
+
+type TaskAssignment = { task_id: string; user_id: string; };
 
 type ActivityLog = {
   id: string;
   task_id: string;
   user_id: string;
   action: 'completed' | 'reassigned' | 'created' | 'updated';
-  timestamp: string; // ISO timestamp
+  timestamp: string;
+};
+
+type TaskTemplate = {
+  id: string;
+  title: string;
+  description?: string;
+  deal_stage: DealStage;
+  priority: TaskPriority;
+  sort_order: number;
+  default_start_offset_days: number;
+  default_duration_days: number;
+  created_at: string;
+};
+
+type AccessRequest = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  message?: string;
+  requested_at: string;
 };
 ```
 
 ---
 
+## Authentication Flow
+
+1. **Login** → `/login` (email/password or request access)
+2. **Invite email** → Supabase sends link; `/auth/confirm` handles code exchange, token hash, or hash-fragment tokens
+3. **Set password** → `/auth/set-password`
+4. **Middleware** → `middleware.ts` checks session on every request; redirects to `/login` if missing; allows `/auth/*` without auth
+5. **Session** → Cookie-based via `@supabase/ssr`
+
+Three Supabase clients exist for different contexts:
+- `lib/supabase-server.ts` — server components / server actions (cookie-aware)
+- `lib/supabase-browser.ts` — client components
+- `lib/supabase-admin.ts` — elevated operations (admin panel)
+
+---
+
+## Server Actions Pattern
+
+All data mutations use Next.js server actions (`'use server'`). After mutations, call `revalidatePath()` to refresh the cache. Actions are co-located with their routes:
+
+- `app/(app)/deals/actions.ts` — deal CRUD, task CRUD, toggle/reorder tasks, task assignments
+- `app/(app)/admin/actions.ts` — user management, invite/approve
+- `app/(app)/admin/default-tasks/actions.ts` — template CRUD
+- `app/(app)/profile/actions.ts` — profile updates
+- `app/login/actions.ts` — login
+
+---
+
 ## Coding Conventions
 
-- Use **named exports** for all components, not default exports
-- Use **functional React components** with hooks
-- Prefer **server components** unless client interactivity is required — mark client components explicitly with `'use client'`
-- Co-locate component files: `/components/deals/DealCard.tsx`, etc.
-- No hardcoded user IDs or magic strings — use constants or enums
-- Never commit `.env` files — use `.env.local` for any future local secrets
+- **Named exports** for all components — no default exports
+- **Functional React components** with hooks
+- **Server components** preferred — mark client components explicitly with `'use client'`
+- **Co-locate** component files: `/components/deals/DealCard.tsx`, etc.
+- **No magic strings** — use the defined union types (`DealStage`, `TaskPriority`, `UserRole`)
+- **No `any` types** — strict TypeScript throughout
+- **`useTransition()`** for loading states in client components that trigger server actions
 
 ---
 
-## Folder Structure (target)
+## Styling
+
+Tailwind v4 is configured via PostCSS (`postcss.config.mjs`). The `@theme` block in `app/globals.css` defines the full color palette — use these tokens, not raw hex values:
+
+**Brand blues:** `brand` (#003D79), `brand-dark`, `brand-deep`, `brand-mid`, `brand-alt`
+**Brand light:** `brand-pale` (#e8f0f8, used for light backgrounds), `brand-100`
+**Semantic:** `surface` (white), `border`, `text-muted`
+**Gray palette:** `gray-50` through `gray-900`
+
+Per the style guide, use brand blues throughout. Reserve red (`red-600`, `red-700`) only for destructive actions (delete confirmations). Base font size is 14px; max-width container is 1400px.
+
+---
+
+## Folder Structure
 
 ```
-/app                  # Next.js App Router pages and layouts
-/components           # Shared UI components (organized by feature)
-  /deals
-  /tasks
-  /users
-  /ui                 # Generic reusable primitives (buttons, badges, etc.)
-/lib                  # Utilities, mock data, type definitions
-  /mock-data.ts       # Hardcoded sample data for local dev
-  /types.ts           # Shared TypeScript types
-/public               # Static assets
+/app
+  /login
+  /auth/callback, /auth/confirm, /auth/set-password
+  /(app)               # Protected routes — layout fetches user + renders TopNav
+    /page.tsx          # Dashboard
+    /deals/[id]
+    /deals/new
+    /admin/users
+    /admin/default-tasks
+    /profile
+/components
+  /ui                  # Badge.tsx (StageBadge, PriorityBadge), TopNav.tsx
+  /auth                # LoginCard, LoginForm, RequestAccessForm
+  /deals               # DealHeader (inline edit + delete with confirmation)
+  /tasks               # TaskStageSection (dnd-kit, assignments, inline edit), TaskFiles
+  /admin               # UsersPageClient, InviteUserForm, DefaultTasksClient
+  /profile             # ProfileForm
+/lib
+  /types.ts            # All TypeScript types
+  /mock-data.ts        # Sample data (retained, not used in active routes)
+  /avatar.ts           # Deterministic avatar color from user ID
+  /supabase-server.ts
+  /supabase-browser.ts
+  /supabase-admin.ts
+/supabase
+  /schema.sql          # Postgres schema
+/public                # brighton-logo.png, welltower-logo.png
+/docs                  # Brand assets + style guide PDF
 ```
 
 ---
 
-## Future Phases (keep in mind, do not build yet)
+## Future Phases
 
-- **Phase 2 — Auth & Database:** Supabase login, protected routes, real data
-- **Phase 2 — Realtime:** Task updates visible to all users without page refresh
-- **Phase 2 — Partner Access:** Welltower external login with restricted visibility
-- **Phase 3 — File Attachments:** Supabase Storage for task file uploads
+- **Phase 3 — File Attachments:** Supabase Storage integration (`TaskFile` type is already defined)
 - **Phase 3 — Comments:** Comment threads on tasks
 - **Phase 3 — Notifications:** Alerts when tasks are assigned
-
-The role system (`admin` / `member` / `partner`) and `partner` field on deals are included in the data model now specifically to avoid rework in Phase 2.
+- **Phase 3 — Partner Access:** Welltower external login with restricted visibility (`partner` role already in schema)
