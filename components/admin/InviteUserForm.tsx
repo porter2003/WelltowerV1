@@ -12,9 +12,11 @@ export function InviteUserForm({ onCancel }: { onCancel: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(formData: FormData) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setError(null);
     setLoading(true);
+    const formData = new FormData(e.currentTarget);
     const result = await inviteUser(formData);
     if (result?.error) {
       setError(result.error);
@@ -24,7 +26,7 @@ export function InviteUserForm({ onCancel }: { onCancel: () => void }) {
 
   return (
     <form
-      action={handleSubmit}
+      onSubmit={handleSubmit}
       className="border-t border-border px-6 py-5 bg-brand-pale/40"
     >
       <p className="text-[12px] font-semibold text-brand uppercase tracking-[0.5px] mb-4">Invite New Team Member</p>
