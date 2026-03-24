@@ -114,7 +114,8 @@ export async function deleteUser(targetUserId: string): Promise<{ error: string 
   // in case the task_files FK doesn't have ON DELETE SET NULL
   await supabaseAdmin
     .from('task_files')
-    .update({ uploaded_by: null })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .update({ uploaded_by: null } as any)
     .eq('uploaded_by', targetUserId);
 
   const { error } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
