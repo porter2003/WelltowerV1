@@ -3,6 +3,7 @@
 import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
+import type { EmailOtpType } from '@supabase/supabase-js';
 
 function ConfirmInner() {
   const router = useRouter();
@@ -23,7 +24,7 @@ function ConfirmInner() {
       }
 
       if (token_hash && type) {
-        const { error } = await supabase.auth.verifyOtp({ token_hash, type: type as 'invite' });
+        const { error } = await supabase.auth.verifyOtp({ token_hash, type: type as EmailOtpType });
         if (!error) { router.replace('/auth/set-password'); return; }
       }
 

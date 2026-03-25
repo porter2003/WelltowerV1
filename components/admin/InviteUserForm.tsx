@@ -21,6 +21,8 @@ export function InviteUserForm({ onCancel }: { onCancel: () => void }) {
     if (result?.error) {
       setError(result.error);
       setLoading(false);
+    } else {
+      onCancel();
     }
   }
 
