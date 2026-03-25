@@ -123,7 +123,7 @@ export async function unarchiveDeal(dealId: string) {
   const { error } = await supabase.from('deals').update({ is_archived: false }).eq('id', dealId);
   if (error) throw new Error(error.message);
 
-  revalidatePath(`/deals/${dealId}`);
+  redirect('/');
 }
 
 export async function deleteDeal(dealId: string) {
