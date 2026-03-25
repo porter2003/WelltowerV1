@@ -18,7 +18,8 @@ Supabase auth and database are fully integrated. The app uses real data, cookie-
 
 - Mock data in `lib/mock-data.ts` is retained but not used in production routes
 - All pages are protected by `middleware.ts` — unauthenticated users are redirected to `/login`
-- Phase 3 work (file attachments via Supabase Storage, comments, notifications) is not yet started
+- File attachments via Supabase Storage are fully implemented (bucket: `task-files`)
+- Remaining Phase 3 work: comments on tasks, notifications, partner access
 
 ---
 
@@ -71,9 +72,24 @@ Protected routes live under `app/(app)/`. The layout at `app/(app)/layout.tsx` f
 
 ---
 
+## Environment Variables
+
+Required in `.env.local` (no `.env.example` exists):
+
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=      # server-only, used by supabase-admin.ts
+NEXT_PUBLIC_APP_URL=            # defaults to https://welltower-v1.vercel.app (used in invite redirect URLs)
+```
+
+---
+
 ## Data Model
 
-Defined in `lib/types.ts`. Maps directly to the Supabase schema in `supabase/schema.sql`.
+Defined in `lib/types.ts`. The TypeScript `Database` type (for typed Supabase queries) is in `lib/supabase.ts`.
+
+> **Note:** `supabase/schema.sql` is stale — it's missing tables (`task_files`, `task_templates`, `access_requests`) and has outdated column names. Treat the Supabase dashboard as the source of truth for the live schema.
 
 ```ts
 type UserRole = 'admin' | 'member' | 'partner';
@@ -170,13 +186,20 @@ type AccessRequest = {
 1. **Login** → `/login` (email/password or request access)
 2. **Invite email** → Supabase sends link; `/auth/confirm` handles code exchange, token hash, or hash-fragment tokens
 3. **Set password** → `/auth/set-password`
-4. **Middleware** → `middleware.ts` checks session on every request; redirects to `/login` if missing; allows `/auth/*` without auth
-5. **Session** → Cookie-based via `@supabase/ssr`
+4. **Middleware** → `middleware.ts` checks session on every request; allows `/auth/*` without auth
+5. **Session** → Cookie-based via `@supabase/ssr`; middleware refreshes cookies on every request
 
-Three Supabase clients exist for different contexts:
-- `lib/supabase-server.ts` — server components / server actions (cookie-aware)
-- `lib/supabase-browser.ts` — client components
-- `lib/supabase-admin.ts` — elevated operations (admin panel)
+**Middleware redirect logic (3-way):**
+- No session + not on `/login` or `/auth/*` → redirect to `/login`
+- Session exists + `user_metadata.password_set === false` + not on `/auth/*` → force redirect to `/auth/set-password` (traps incomplete invites)
+- Session exists + on `/login` → redirect to `/`
+
+The `password_set` flag is written to `user_metadata` by the `inviteUser()` server action and cleared once the user sets a password.
+
+**Supabase clients — when to use each:**
+- `lib/supabase-server.ts` — server components and server actions (cookie-aware, use for all standard queries)
+- `lib/supabase-admin.ts` — admin-only operations: `inviteUserByEmail`, `deleteUser`, upserts on profiles (uses `SUPABASE_SERVICE_ROLE_KEY`)
+- `lib/supabase-browser.ts` — client components only; also used in `TaskFiles` for direct Storage access
 
 ---
 
@@ -201,6 +224,7 @@ All data mutations use Next.js server actions (`'use server'`). After mutations,
 - **No magic strings** — use the defined union types (`DealStage`, `TaskPriority`, `UserRole`)
 - **No `any` types** — strict TypeScript throughout
 - **`useTransition()`** for loading states in client components that trigger server actions
+- **Date parsing:** Always parse ISO date strings as `new Date(isoString + 'T00:00:00')` — appending the time prevents UTC offset from shifting the displayed date by one day
 
 ---
 
@@ -254,7 +278,6 @@ Per the style guide, use brand blues throughout. Reserve red (`red-600`, `red-70
 
 ## Future Phases
 
-- **Phase 3 — File Attachments:** Supabase Storage integration (`TaskFile` type is already defined)
 - **Phase 3 — Comments:** Comment threads on tasks
 - **Phase 3 — Notifications:** Alerts when tasks are assigned
 - **Phase 3 — Partner Access:** Welltower external login with restricted visibility (`partner` role already in schema)

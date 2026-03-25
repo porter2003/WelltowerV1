@@ -15,9 +15,9 @@ export type Database = {
         Relationships: [];
       };
       deals: {
-        Row:    { id: string; name: string; partner: string; city: string; state: string; county: string | null; unit_count: number; stage: DealStage; start_date: string; target_completion_date: string; created_at: string };
-        Insert: { id?: string; name: string; partner?: string; city: string; state: string; county?: string | null; unit_count: number; stage?: DealStage; start_date: string; target_completion_date: string };
-        Update: { name?: string; partner?: string; city?: string; state?: string; county?: string | null; unit_count?: number; stage?: DealStage; start_date?: string; target_completion_date?: string };
+        Row:    { id: string; name: string; partner: string; city: string; state: string; county: string | null; unit_count: number; stage: DealStage; start_date: string; target_completion_date: string; is_archived: boolean; created_at: string };
+        Insert: { id?: string; name: string; partner?: string; city: string; state: string; county?: string | null; unit_count: number; stage?: DealStage; start_date: string; target_completion_date: string; is_archived?: boolean };
+        Update: { name?: string; partner?: string; city?: string; state?: string; county?: string | null; unit_count?: number; stage?: DealStage; start_date?: string; target_completion_date?: string; is_archived?: boolean };
         Relationships: [];
       };
       tasks: {

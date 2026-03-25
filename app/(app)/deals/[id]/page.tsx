@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase-server';
 import { DealHeader } from '@/components/deals/DealHeader';
 import { TaskStageSection } from '@/components/tasks/TaskStageSection';
+import { ActivityFeed } from '@/components/tasks/ActivityFeed';
 import type { Deal, DealStage, Task, User } from '@/lib/types';
 
 export const revalidate = 0;
@@ -44,10 +45,18 @@ export default async function DealDetailPage({ params }: Props) {
   // Fetch current user's role and task assignments
   const taskIds = taskList.map((t) => t.id);
 
-  const [{ data: profile }, { data: assignmentsData }] = await Promise.all([
+  const [{ data: profile }, { data: assignmentsData }, { data: activityData }] = await Promise.all([
     supabase.from('profiles').select('role').eq('id', authUser?.id ?? '').single(),
     taskIds.length > 0
       ? supabase.from('task_assignments').select('task_id, user_id').in('task_id', taskIds)
+      : Promise.resolve({ data: [] }),
+    taskIds.length > 0
+      ? supabase
+          .from('activity_logs')
+          .select('id, task_id, user_id, action, timestamp')
+          .in('task_id', taskIds)
+          .order('timestamp', { ascending: false })
+          .limit(50)
       : Promise.resolve({ data: [] }),
   ]);
 
@@ -64,6 +73,25 @@ export default async function DealDetailPage({ params }: Props) {
       assignmentsByTaskId[assignment.task_id].push(user);
     }
   }
+
+  // Build activity feed entries by joining logs with task titles and user names
+  const taskTitleById: Record<string, string> = {};
+  for (const t of taskList) taskTitleById[t.id] = t.title;
+
+  const userById: Record<string, User> = {};
+  for (const u of users) userById[u.id] = u;
+
+  const activityEntries = (activityData ?? [])
+    .filter((log) => taskTitleById[log.task_id] && userById[log.user_id])
+    .map((log) => ({
+      id: log.id,
+      action: log.action as 'completed' | 'reassigned' | 'created' | 'updated',
+      timestamp: log.timestamp,
+      taskTitle: taskTitleById[log.task_id],
+      userFirstName: userById[log.user_id].first_name,
+      userLastName: userById[log.user_id].last_name,
+      userId: log.user_id,
+    }));
 
   const tasksByStage = STAGE_ORDER.reduce<Record<DealStage, Task[]>>(
     (acc, stage) => {
@@ -109,6 +137,11 @@ export default async function DealDetailPage({ params }: Props) {
             assignmentsByTaskId={assignmentsByTaskId}
           />
         ))}
+      </div>
+
+      {/* Activity log */}
+      <div className="mt-6">
+        <ActivityFeed entries={activityEntries} />
       </div>
     </div>
   );

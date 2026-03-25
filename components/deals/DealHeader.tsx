@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { StageBadge } from '@/components/ui/Badge';
-import { updateDeal, deleteDeal } from '@/app/(app)/deals/actions';
+import { updateDeal, deleteDeal, archiveDeal, unarchiveDeal } from '@/app/(app)/deals/actions';
 import type { Deal, DealStage } from '@/lib/types';
 
 const STAGES: DealStage[] = ['Due Diligence', 'Entitlements', 'Construction', 'Closeout'];
@@ -26,6 +26,7 @@ type EditForm = {
 
 // 0 = idle, 1 = first warning, 2 = second warning (name confirmation)
 type DeleteStep = 0 | 1 | 2;
+type ArchiveStep = 0 | 1;
 
 function toDateInput(iso: string) {
   return iso.slice(0, 10);
@@ -35,6 +36,7 @@ export function DealHeader({ deal, pct, isAdmin }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [deleteStep, setDeleteStep] = useState<DeleteStep>(0);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [archiveStep, setArchiveStep] = useState<ArchiveStep>(0);
   const [form, setForm] = useState<EditForm>({
     name: deal.name,
     city: deal.city,
@@ -84,6 +86,14 @@ export function DealHeader({ deal, pct, isAdmin }: Props) {
   function resetDelete() {
     setDeleteStep(0);
     setDeleteConfirmName('');
+  }
+
+  function handleArchive() {
+    startTransition(() => archiveDeal(deal.id));
+  }
+
+  function handleUnarchive() {
+    startTransition(() => unarchiveDeal(deal.id));
   }
 
   const field = (label: string, children: React.ReactNode) => (
@@ -236,19 +246,56 @@ export function DealHeader({ deal, pct, isAdmin }: Props) {
                 <span>{deal.unit_count} Units</span>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <StageBadge stage={deal.stage} />
+              {deal.is_archived && (
+                <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-gray-200 text-gray-600 uppercase tracking-wide">Archived</span>
+              )}
+              {isAdmin && !deal.is_archived && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-border rounded-lg text-text-muted hover:text-brand hover:border-brand hover:bg-brand-pale transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+                    <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.774a2.75 2.75 0 0 0-.596.892l-.848 2.047a.75.75 0 0 0 .98.98l2.047-.848a2.75 2.75 0 0 0 .892-.596l4.261-4.263a1.75 1.75 0 0 0 0-2.474ZM3.75 14A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2H7a.75.75 0 0 1 0 1.5H3.75a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25V9a.75.75 0 0 1 1.5 0v3.25A1.75 1.75 0 0 1 12.25 14h-8.5Z" />
+                  </svg>
+                  Edit
+                </button>
+              )}
               {isAdmin && (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-border rounded-lg text-text-muted hover:text-brand hover:border-brand hover:bg-brand-pale transition-colors"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
-                  <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.774a2.75 2.75 0 0 0-.596.892l-.848 2.047a.75.75 0 0 0 .98.98l2.047-.848a2.75 2.75 0 0 0 .892-.596l4.261-4.263a1.75 1.75 0 0 0 0-2.474ZM3.75 14A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2H7a.75.75 0 0 1 0 1.5H3.75a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25V9a.75.75 0 0 1 1.5 0v3.25A1.75 1.75 0 0 1 12.25 14h-8.5Z" />
-                </svg>
-                Edit
-              </button>)}
-              {isAdmin && (
+                archiveStep === 1 ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-text-muted">
+                      {deal.is_archived ? 'Restore this deal?' : 'Archive this deal?'}
+                    </span>
+                    <button
+                      onClick={deal.is_archived ? handleUnarchive : handleArchive}
+                      disabled={isPending}
+                      className="px-3 py-1.5 text-sm border border-border rounded-lg text-text-muted hover:text-brand hover:border-brand hover:bg-brand-pale disabled:opacity-50 transition-colors"
+                    >
+                      {isPending ? 'Working…' : 'Confirm'}
+                    </button>
+                    <button
+                      onClick={() => setArchiveStep(0)}
+                      className="px-3 py-1.5 text-sm border border-border rounded-lg text-text-muted hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setArchiveStep(1)}
+                    title={deal.is_archived ? 'Restore deal' : 'Archive deal'}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-border rounded-lg text-text-muted hover:text-brand hover:border-brand hover:bg-brand-pale transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+                      <path d="M2 3.75C2 2.784 2.784 2 3.75 2h8.5c.966 0 1.75.784 1.75 1.75v.5A1.75 1.75 0 0 1 12.25 6H3.75A1.75 1.75 0 0 1 2 4.25v-.5ZM3.75 7.5a.25.25 0 0 0-.25.25v4.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-4.5a.25.25 0 0 0-.25-.25H3.75ZM6.5 9.25a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5h-1.5a.75.75 0 0 1-.75-.75Z" />
+                    </svg>
+                    {deal.is_archived ? 'Restore' : 'Archive'}
+                  </button>
+                )
+              )}
+              {isAdmin && !deal.is_archived && (
                 <button
                   onClick={() => setDeleteStep(1)}
                   title="Delete deal"

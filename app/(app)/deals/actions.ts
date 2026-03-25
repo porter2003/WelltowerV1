@@ -96,6 +96,36 @@ export async function updateDeal(
   revalidatePath(`/deals/${dealId}`);
 }
 
+export async function archiveDeal(dealId: string) {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'admin') throw new Error('Unauthorized');
+
+  const { error } = await supabase.from('deals').update({ is_archived: true }).eq('id', dealId);
+  if (error) throw new Error(error.message);
+
+  redirect('/');
+}
+
+export async function unarchiveDeal(dealId: string) {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'admin') throw new Error('Unauthorized');
+
+  const { error } = await supabase.from('deals').update({ is_archived: false }).eq('id', dealId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/deals/${dealId}`);
+}
+
 export async function deleteDeal(dealId: string) {
   const supabase = await createClient();
 
@@ -121,8 +151,9 @@ export async function createTask(formData: FormData) {
   const supabase = await createClient();
 
   const deal_id = formData.get('deal_id') as string;
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const { error } = await supabase.from('tasks').insert({
+  const { data: task, error } = await supabase.from('tasks').insert({
     deal_id,
     title: formData.get('title') as string,
     description: (formData.get('description') as string) || null,
@@ -130,15 +161,20 @@ export async function createTask(formData: FormData) {
     priority: (formData.get('priority') as TaskPriority) ?? 'medium',
     start_date: (formData.get('start_date') as string) || null,
     due_date: (formData.get('due_date') as string) || null,
-  });
+  }).select('id').single();
 
   if (error) throw new Error(error.message);
+
+  if (user && task) {
+    await supabase.from('activity_logs').insert({ task_id: task.id, user_id: user.id, action: 'created' });
+  }
 
   revalidatePath(`/deals/${deal_id}`);
 }
 
 export async function toggleTask(taskId: string, dealId: string, currentValue: boolean) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const { error } = await supabase
     .from('tasks')
@@ -150,6 +186,11 @@ export async function toggleTask(taskId: string, dealId: string, currentValue: b
 
   if (error) throw new Error(error.message);
 
+  // Only log when completing, not un-completing
+  if (user && !currentValue) {
+    await supabase.from('activity_logs').insert({ task_id: taskId, user_id: user.id, action: 'completed' });
+  }
+
   revalidatePath(`/deals/${dealId}`);
 }
 
@@ -159,6 +200,7 @@ export async function updateTask(
   updates: { title: string; description?: string; priority: TaskPriority; start_date?: string; due_date?: string; doc_link?: string }
 ) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const { error } = await supabase
     .from('tasks')
@@ -173,6 +215,10 @@ export async function updateTask(
     .eq('id', taskId);
 
   if (error) throw new Error(error.message);
+
+  if (user) {
+    await supabase.from('activity_logs').insert({ task_id: taskId, user_id: user.id, action: 'updated' });
+  }
 
   revalidatePath(`/deals/${dealId}`);
 }
@@ -233,12 +279,17 @@ export async function deleteTask(taskId: string, dealId: string) {
 
 export async function assignUserToTask(taskId: string, userId: string, dealId: string) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const { error } = await supabase
     .from('task_assignments')
     .insert({ task_id: taskId, user_id: userId });
 
   if (error) throw new Error(error.message);
+
+  if (user) {
+    await supabase.from('activity_logs').insert({ task_id: taskId, user_id: user.id, action: 'reassigned' });
+  }
 
   revalidatePath(`/deals/${dealId}`);
 }

@@ -461,15 +461,23 @@ export function TaskStageSection({
                                   })}
                                 </span>
                               )}
-                              {task.due_date && (
-                                <span className="text-sm text-text-muted">
-                                  Due{' '}
-                                  {new Date(task.due_date + 'T00:00:00').toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                  })}
-                                </span>
-                              )}
+                              {task.due_date && (() => {
+                                const isOverdue = !task.is_complete && new Date(task.due_date + 'T00:00:00') < new Date(new Date().toDateString());
+                                return (
+                                  <span className={`text-sm flex items-center gap-1.5 ${isOverdue ? 'text-gray-700 font-medium' : 'text-text-muted'}`}>
+                                    Due{' '}
+                                    {new Date(task.due_date + 'T00:00:00').toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                    })}
+                                    {isOverdue && (
+                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-200 text-gray-600 uppercase tracking-wide">
+                                        Overdue
+                                      </span>
+                                    )}
+                                  </span>
+                                );
+                              })()}
 
                               {/* Assignee chips + assign button */}
                               <div className="flex items-center gap-1">

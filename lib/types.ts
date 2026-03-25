@@ -22,6 +22,7 @@ export type Deal = {
   stage: DealStage;
   start_date: string;
   target_completion_date: string;
+  is_archived?: boolean;
 };
 
 export type TaskPriority = 'low' | 'medium' | 'high';
