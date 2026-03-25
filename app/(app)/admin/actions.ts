@@ -1,6 +1,5 @@
 'use server';
 
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createClient } from '@/lib/supabase-server';
@@ -31,7 +30,7 @@ export async function inviteUser(formData: FormData): Promise<{ error: string } 
 
   if (profileError) return { error: profileError.message };
 
-  redirect('/admin/users');
+  revalidatePath('/admin/users');
 }
 
 export async function approveRequest(requestId: string, formData: FormData): Promise<{ error: string } | void> {
