@@ -21,6 +21,7 @@ export async function updateProfile(formData: FormData) {
   if (error) throw new Error(error.message);
 
   revalidatePath('/');
+  redirect('/');
 }
 
 export async function signOut() {

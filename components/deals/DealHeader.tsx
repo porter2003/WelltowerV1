@@ -254,7 +254,7 @@ export function DealHeader({ deal, pct, isAdmin }: Props) {
               {isAdmin && !deal.is_archived && (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-border rounded-lg text-text-muted hover:text-brand hover:border-brand hover:bg-brand-pale transition-colors"
+                  className="flex items-center gap-1.5 h-8 px-3 text-sm border border-border rounded-lg text-text-muted hover:text-brand hover:border-brand hover:bg-brand-pale transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
                     <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.774a2.75 2.75 0 0 0-.596.892l-.848 2.047a.75.75 0 0 0 .98.98l2.047-.848a2.75 2.75 0 0 0 .892-.596l4.261-4.263a1.75 1.75 0 0 0 0-2.474ZM3.75 14A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2H7a.75.75 0 0 1 0 1.5H3.75a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25V9a.75.75 0 0 1 1.5 0v3.25A1.75 1.75 0 0 1 12.25 14h-8.5Z" />
@@ -286,7 +286,7 @@ export function DealHeader({ deal, pct, isAdmin }: Props) {
                   <button
                     onClick={() => setArchiveStep(1)}
                     title={deal.is_archived ? 'Restore deal' : 'Archive deal'}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-border rounded-lg text-text-muted hover:text-brand hover:border-brand hover:bg-brand-pale transition-colors"
+                    className="flex items-center gap-1.5 h-8 px-3 text-sm border border-border rounded-lg text-text-muted hover:text-brand hover:border-brand hover:bg-brand-pale transition-colors"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
                       <path d="M2 3.75C2 2.784 2.784 2 3.75 2h8.5c.966 0 1.75.784 1.75 1.75v.5A1.75 1.75 0 0 1 12.25 6H3.75A1.75 1.75 0 0 1 2 4.25v-.5ZM3.75 7.5a.25.25 0 0 0-.25.25v4.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-4.5a.25.25 0 0 0-.25-.25H3.75ZM6.5 9.25a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5h-1.5a.75.75 0 0 1-.75-.75Z" />
@@ -299,7 +299,7 @@ export function DealHeader({ deal, pct, isAdmin }: Props) {
                 <button
                   onClick={() => setDeleteStep(1)}
                   title="Delete deal"
-                  className="flex items-center px-3 py-1.5 text-sm border border-border rounded-lg text-text-muted hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-colors"
+                  className="flex items-center h-8 px-3 text-sm border border-border rounded-lg text-text-muted hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
                     <path fillRule="evenodd" d="M5 3.25V4H2.75a.75.75 0 0 0 0 1.5h.3l.815 8.15A1.5 1.5 0 0 0 5.357 15h5.285a1.5 1.5 0 0 0 1.493-1.35l.815-8.15h.3a.75.75 0 0 0 0-1.5H11v-.75A2.25 2.25 0 0 0 8.75 1h-1.5A2.25 2.25 0 0 0 5 3.25Zm2.25-.75a.75.75 0 0 0-.75.75V4h3v-.75a.75.75 0 0 0-.75-.75h-1.5ZM6.05 6a.75.75 0 0 1 .787.713l.275 5.5a.75.75 0 0 1-1.498.075l-.275-5.5A.75.75 0 0 1 6.05 6Zm3.9 0a.75.75 0 0 1 .712.787l-.275 5.5a.75.75 0 0 1-1.498-.075l.275-5.5a.75.75 0 0 1 .786-.711Z" clipRule="evenodd" />
