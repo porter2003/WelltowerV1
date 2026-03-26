@@ -26,6 +26,20 @@ export async function recordReferenceFileUpload(
   revalidatePath('/resources');
 }
 
+export async function renameReferenceFile(fileId: string, newName: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('reference_files')
+    .update({ file_name: newName })
+    .eq('id', fileId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath('/resources');
+}
+
 export async function deleteReferenceFile(fileId: string, filePath: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

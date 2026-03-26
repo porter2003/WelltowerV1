@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase-browser';
-import { recordReferenceFileUpload, deleteReferenceFile } from '@/app/(app)/resources/actions';
+import { recordReferenceFileUpload, deleteReferenceFile, renameReferenceFile } from '@/app/(app)/resources/actions';
 import type { ReferenceFile } from '@/lib/types';
 
 type ReferenceFileWithUploader = ReferenceFile & {
@@ -23,6 +23,9 @@ export function ReferenceFiles() {
   const [uploading, setUploading] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [renameSaving, setRenameSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -82,6 +85,15 @@ export function ReferenceFiles() {
       : data.signedUrl;
   }
 
+  async function handleRename(fileId: string) {
+    if (!renameValue.trim()) return;
+    setRenameSaving(true);
+    await renameReferenceFile(fileId, renameValue.trim());
+    await loadFiles();
+    setRenamingId(null);
+    setRenameSaving(false);
+  }
+
   async function handleDelete(fileId: string, filePath: string) {
     setDeletingId(fileId);
     setConfirmRemoveId(null);
@@ -122,13 +134,41 @@ export function ReferenceFiles() {
                   <path fillRule="evenodd" d="M4 2a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V6.621a1.5 1.5 0 0 0-.44-1.06L9.94 2.439A1.5 1.5 0 0 0 8.878 2H4Zm1 7.25a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1-.75-.75Zm.75-3.25a.75.75 0 0 0 0 1.5H8A.75.75 0 0 0 8 6H5.75Z" clipRule="evenodd" />
                 </svg>
 
-                <button
-                  onClick={() => handleOpen(f.file_path, f.file_name)}
-                  className="text-sm font-medium text-brand hover:underline truncate max-w-[220px] sm:max-w-[400px] text-left"
-                  title={f.file_name}
-                >
-                  {f.file_name}
-                </button>
+                {renamingId === f.id ? (
+                  <div className="flex items-center gap-2 flex-1">
+                    <input
+                      autoFocus
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRename(f.id);
+                        if (e.key === 'Escape') setRenamingId(null);
+                      }}
+                      className="flex-1 border border-border rounded-lg px-2 py-1 text-sm text-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                    />
+                    <button
+                      onClick={() => handleRename(f.id)}
+                      disabled={renameSaving || !renameValue.trim()}
+                      className="px-3 py-1 text-xs bg-brand text-white rounded-lg hover:bg-brand/90 disabled:opacity-50 transition-opacity"
+                    >
+                      {renameSaving ? 'Saving…' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => setRenamingId(null)}
+                      className="px-3 py-1 text-xs border border-border rounded-lg text-text-muted hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleOpen(f.file_path, f.file_name)}
+                    className="text-sm font-medium text-brand hover:underline truncate max-w-[220px] sm:max-w-[400px] text-left"
+                    title={f.file_name}
+                  >
+                    {f.file_name}
+                  </button>
+                )}
 
                 <div className="flex items-center gap-3 ml-auto shrink-0">
                   {f.file_size !== null && (
@@ -160,13 +200,21 @@ export function ReferenceFiles() {
                       </button>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => setConfirmRemoveId(f.id)}
-                      className="text-xs text-red-400 hover:text-red-600 transition-colors"
-                      title="Remove file"
-                    >
-                      Remove
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => { setRenamingId(f.id); setRenameValue(f.file_name); setConfirmRemoveId(null); }}
+                        className="text-xs text-text-muted hover:text-brand transition-colors"
+                      >
+                        Rename
+                      </button>
+                      <button
+                        onClick={() => setConfirmRemoveId(f.id)}
+                        className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                        title="Remove file"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   )}
                 </div>
               </li>

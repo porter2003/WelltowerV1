@@ -53,7 +53,7 @@ export type Database = {
       reference_files: {
         Row:    { id: string; file_name: string; file_path: string; file_size: number | null; mime_type: string | null; uploaded_by: string | null; uploaded_at: string };
         Insert: { id?: string; file_name: string; file_path: string; file_size?: number | null; mime_type?: string | null; uploaded_by?: string | null };
-        Update: never;
+        Update: { file_name?: string };
         Relationships: [];
       };
       task_templates: {
