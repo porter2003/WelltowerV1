@@ -50,6 +50,12 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      reference_files: {
+        Row:    { id: string; file_name: string; file_path: string; file_size: number | null; mime_type: string | null; uploaded_by: string | null; uploaded_at: string };
+        Insert: { id?: string; file_name: string; file_path: string; file_size?: number | null; mime_type?: string | null; uploaded_by?: string | null };
+        Update: never;
+        Relationships: [];
+      };
       task_templates: {
         Row:    { id: string; title: string; description: string | null; deal_stage: DealStage; priority: 'low' | 'medium' | 'high'; sort_order: number; default_start_offset_days: number; default_duration_days: number; created_at: string };
         Insert: { id?: string; title: string; description?: string | null; deal_stage: DealStage; priority?: 'low' | 'medium' | 'high'; sort_order?: number; default_start_offset_days?: number; default_duration_days?: number };

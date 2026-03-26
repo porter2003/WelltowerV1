@@ -81,6 +81,16 @@ export type TaskTemplate = {
   created_at: string;
 };
 
+export type ReferenceFile = {
+  id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number | null;
+  mime_type: string | null;
+  uploaded_by: string | null;
+  uploaded_at: string;
+};
+
 export type AccessRequest = {
   id: string;
   first_name: string;
