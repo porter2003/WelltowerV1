@@ -129,7 +129,7 @@ export function ReferenceFiles() {
         ) : (
           <ul className="divide-y divide-border">
             {files.map((f) => (
-              <li key={f.id} className="flex items-center gap-3 py-3">
+              <li key={f.id} className="flex items-center gap-3 py-3 group/row">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-4 h-4 text-text-muted shrink-0">
                   <path fillRule="evenodd" d="M4 2a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V6.621a1.5 1.5 0 0 0-.44-1.06L9.94 2.439A1.5 1.5 0 0 0 8.878 2H4Zm1 7.25a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1-.75-.75Zm.75-3.25a.75.75 0 0 0 0 1.5H8A.75.75 0 0 0 8 6H5.75Z" clipRule="evenodd" />
                 </svg>
@@ -161,13 +161,24 @@ export function ReferenceFiles() {
                     </button>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => handleOpen(f.file_path, f.file_name)}
-                    className="text-sm font-medium text-brand hover:underline truncate max-w-[220px] sm:max-w-[400px] text-left"
-                    title={f.file_name}
-                  >
-                    {f.file_name}
-                  </button>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <button
+                      onClick={() => handleOpen(f.file_path, f.file_name)}
+                      className="text-sm font-medium text-brand hover:underline truncate max-w-[220px] sm:max-w-[400px] text-left"
+                      title={f.file_name}
+                    >
+                      {f.file_name}
+                    </button>
+                    <button
+                      onClick={() => { setRenamingId(f.id); setRenameValue(f.file_name); setConfirmRemoveId(null); }}
+                      title="Rename file"
+                      className="opacity-0 group-hover/row:opacity-100 transition-opacity p-1 rounded text-text-muted hover:text-brand hover:bg-brand-pale shrink-0"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+                        <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.774a2.75 2.75 0 0 0-.596.892l-.848 2.047a.75.75 0 0 0 .98.98l2.047-.848a2.75 2.75 0 0 0 .892-.596l4.261-4.263a1.75 1.75 0 0 0 0-2.474ZM3.75 14A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2H7a.75.75 0 0 1 0 1.5H3.75a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25V9a.75.75 0 0 1 1.5 0v3.25A1.75 1.75 0 0 1 12.25 14h-8.5Z" />
+                      </svg>
+                    </button>
+                  </div>
                 )}
 
                 <div className="flex items-center gap-3 ml-auto shrink-0">
@@ -200,21 +211,13 @@ export function ReferenceFiles() {
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => { setRenamingId(f.id); setRenameValue(f.file_name); setConfirmRemoveId(null); }}
-                        className="text-xs text-text-muted hover:text-brand transition-colors"
-                      >
-                        Rename
-                      </button>
-                      <button
-                        onClick={() => setConfirmRemoveId(f.id)}
-                        className="text-xs text-red-400 hover:text-red-600 transition-colors"
-                        title="Remove file"
-                      >
-                        Remove
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => setConfirmRemoveId(f.id)}
+                      className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                      title="Remove file"
+                    >
+                      Remove
+                    </button>
                   )}
                 </div>
               </li>
